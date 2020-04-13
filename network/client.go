@@ -69,7 +69,7 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 
 		case RealtimeCarUpdate:
 			if client.CarUpdateFn != nil {
-				carUpdate := UnmarshalCarUpdateResp(readBuffer)
+				carUpdate, _ := UnmarshalCarUpdateResp(readBuffer)
 				client.CarUpdateFn(carUpdate)
 			}
 

@@ -133,44 +133,50 @@ func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car Car, ok bool) {
 	return car, ok
 }
 
-func UnmarshalLap(buffer *bytes.Buffer) (lap Lap) {
-	binary.Read(buffer, binary.LittleEndian, &lap.LapTimeMs)
-	binary.Read(buffer, binary.LittleEndian, &lap.CarId)
-	binary.Read(buffer, binary.LittleEndian, &lap.DriverId)
+func UnmarshalLap(buffer *bytes.Buffer) (lap Lap, ok bool) {
+	ok = readBuffer(buffer, &lap.LapTimeMs)
+	ok = ok && readBuffer(buffer, &lap.CarId)
+	ok = ok && readBuffer(buffer, &lap.DriverId)
 
 	var splitCount uint8
-	binary.Read(buffer, binary.LittleEndian, &splitCount)
+	ok = ok && readBuffer(buffer, &splitCount)
 	lap.Splits = make([]int32, splitCount)
-	for i := uint8(0); i < splitCount; i++ {
-		binary.Read(buffer, binary.LittleEndian, &(lap.Splits[i]))
+	for i := uint8(0); ok && i < splitCount; i++ {
+		ok = ok && readBuffer(buffer, &(lap.Splits[i]))
 	}
-	binary.Read(buffer, binary.LittleEndian, &lap.IsInvalid)
-	binary.Read(buffer, binary.LittleEndian, &lap.IsValidForBest)
-	binary.Read(buffer, binary.LittleEndian, &lap.IsOutLap)
-	binary.Read(buffer, binary.LittleEndian, &lap.IsInLap)
-	return lap
+	ok = ok && readBuffer(buffer, &lap.IsInvalid)
+	ok = ok && readBuffer(buffer, &lap.IsValidForBest)
+	ok = ok && readBuffer(buffer, &lap.IsOutLap)
+	ok = ok && readBuffer(buffer, &lap.IsInLap)
+	return lap, ok
 }
 
-func UnmarshalCarUpdateResp(buffer *bytes.Buffer) (carUpdate CarUpdate) {
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.Id)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.DriverId)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.DriverCount)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.Gear)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.WorldPosX)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.WorldPosY)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.Yaw)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.CarLocation)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.Kmh)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.Position)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.CupPosition)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.TrackPosition)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.SplinePosition)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.Laps)
-	binary.Read(buffer, binary.LittleEndian, &carUpdate.Delta)
-	carUpdate.BestSessionLap = UnmarshalLap(buffer)
-	carUpdate.LastLap = UnmarshalLap(buffer)
-	carUpdate.CurrentLap = UnmarshalLap(buffer)
-	return carUpdate
+func UnmarshalCarUpdateResp(buffer *bytes.Buffer) (carUpdate CarUpdate, ok bool) {
+	ok = readBuffer(buffer, &carUpdate.Id)
+	ok = ok && readBuffer(buffer, &carUpdate.DriverId)
+	ok = ok && readBuffer(buffer, &carUpdate.DriverCount)
+	ok = ok && readBuffer(buffer, &carUpdate.Gear)
+	ok = ok && readBuffer(buffer, &carUpdate.WorldPosX)
+	ok = ok && readBuffer(buffer, &carUpdate.WorldPosY)
+	ok = ok && readBuffer(buffer, &carUpdate.Yaw)
+	ok = ok && readBuffer(buffer, &carUpdate.CarLocation)
+	ok = ok && readBuffer(buffer, &carUpdate.Kmh)
+	ok = ok && readBuffer(buffer, &carUpdate.Position)
+	ok = ok && readBuffer(buffer, &carUpdate.CupPosition)
+	ok = ok && readBuffer(buffer, &carUpdate.TrackPosition)
+	ok = ok && readBuffer(buffer, &carUpdate.SplinePosition)
+	ok = ok && readBuffer(buffer, &carUpdate.Laps)
+	ok = ok && readBuffer(buffer, &carUpdate.Delta)
+	if ok {
+		carUpdate.BestSessionLap, ok = UnmarshalLap(buffer)
+	}
+	if ok {
+		carUpdate.LastLap, ok = UnmarshalLap(buffer)
+	}
+	if ok {
+		carUpdate.CurrentLap, ok = UnmarshalLap(buffer)
+	}
+	return carUpdate, ok
 }
 
 func writeByteBuffer(buffer *bytes.Buffer, b byte) bool {
