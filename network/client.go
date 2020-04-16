@@ -11,9 +11,11 @@ const BROADCASTING_PROTOCOL_VERSION byte = 3
 const ReadBufferSize = 10 * 1024
 
 type Client struct {
-	Wg          *sync.WaitGroup
-	CarUpdateFn func(CarUpdate)
-	conn        *net.UDPConn
+	Wg             *sync.WaitGroup
+	conn           *net.UDPConn
+	OnEntryList    func(EntryList)
+	OnEntryListCar func(EntryListCar)
+	OnCarUpdate    func(CarUpdate)
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) {
@@ -55,7 +57,7 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 
 		// handle msg
 		switch msgType {
-		case RegistrationResult:
+		case RegistrationResultMsgType:
 			log.Println("Recvd Registration")
 			connectionId, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
 			log.Println("Connection:", connectionId, isReadOnly, errMsg)
@@ -64,31 +66,32 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 			MarshalEntryListReq(&writeBuffer, connectionId)
 			client.conn.Write(writeBuffer.Bytes())
 
-		case RealtimeUpdate:
-			log.Println("Recvd RealtimeUpdate")
+		case RealtimeUpdateMsgType:
+			log.Println("Recvd RealtimeUpdateMsgType")
 
-		case RealtimeCarUpdate:
-			if client.CarUpdateFn != nil {
+		case RealtimeCarUpdateMsgType:
+			if client.OnCarUpdate != nil {
 				carUpdate, _ := UnmarshalCarUpdateResp(readBuffer)
-				client.CarUpdateFn(carUpdate)
+				client.OnCarUpdate(carUpdate)
 			}
 
-		case EntryList:
-			log.Println("Recvd EntryList")
-			connectionId, carIds, _ := UnmarshalEntryListRep(readBuffer)
-			log.Println("entry-list(", connectionId, "):", carIds)
-			//sessionCarIds = carIds
+		case EntryListMsgType:
+			if client.OnEntryList != nil {
+				_, carIds, _ := UnmarshalEntryListRep(readBuffer)
+				client.OnEntryList(carIds)
+			}
 
-		case EntryListCar:
-			log.Println("Recvd EntryListCar")
-			car, _ := UnmarshalEntryListCarResp(readBuffer)
-			log.Println("car:", car)
+		case EntryListCarMsgType:
+			if client.OnEntryListCar != nil {
+				entryListCar, _ := UnmarshalEntryListCarResp(readBuffer)
+				client.OnEntryListCar(entryListCar)
+			}
 
-		case TrackData:
-			log.Println("Recvd TrackData")
+		case TrackDataMsgType:
+			log.Println("Recvd TrackDataMsgType")
 
-		case BroadcastingEvent:
-			log.Println("Recvd BroadcastingEvent")
+		case BroadcastingEventMsgType:
+			log.Println("Recvd BroadcastingEventMsgType")
 
 		default:
 			log.Println("WARNING:unrecognised msg-type")

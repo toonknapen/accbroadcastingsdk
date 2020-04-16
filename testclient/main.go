@@ -7,8 +7,16 @@ import (
 	"time"
 )
 
+func OnEntryList(entryList network.EntryList) {
+	log.Println("EntryList:", entryList)
+}
+
+func OnEntryListCar(entryListCar network.EntryListCar) {
+	log.Println("EntryListCar:", entryListCar)
+}
+
 func OnCarUpdate(carUpdate network.CarUpdate) {
-	log.Println("Recvd RealtimeCarUpdate")
+	log.Println("Recvd RealtimeCarUpdateMsgType")
 	log.Println(carUpdate)
 	log.Printf("  laps:%d delta:%d", carUpdate.Laps, carUpdate.Delta)
 	log.Println("  last-lap:", carUpdate.LastLap.LapTimeMs, " splits:", carUpdate.LastLap.Splits)
@@ -18,11 +26,10 @@ func OnCarUpdate(carUpdate network.CarUpdate) {
 func main() {
 	var wg sync.WaitGroup
 
-	client := network.Client{Wg: &wg, CarUpdateFn: OnCarUpdate}
+	client := network.Client{Wg: &wg, OnCarUpdate: OnCarUpdate}
 
 	wg.Add(1)
 	go client.ConnectAndRun("127.0.0.1:9000", "foobar", "asd", 5000, "")
-	time.Sleep(100 * time.Second)
+	time.Sleep(10000 * time.Second)
 	client.Disconnect()
-	wg.Wait()
 }

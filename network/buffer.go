@@ -21,23 +21,18 @@ const (
 type InboundMessageTypes = byte
 
 const (
-	RegistrationResult InboundMessageTypes = 1
-	RealtimeUpdate     InboundMessageTypes = 2
-	RealtimeCarUpdate  InboundMessageTypes = 3
-	EntryList          InboundMessageTypes = 4
-	EntryListCar       InboundMessageTypes = 6
-	TrackData          InboundMessageTypes = 5
-	BroadcastingEvent  InboundMessageTypes = 7
+	RegistrationResultMsgType InboundMessageTypes = 1
+	RealtimeUpdateMsgType     InboundMessageTypes = 2
+	RealtimeCarUpdateMsgType  InboundMessageTypes = 3
+	EntryListMsgType          InboundMessageTypes = 4
+	EntryListCarMsgType       InboundMessageTypes = 6
+	TrackDataMsgType          InboundMessageTypes = 5
+	BroadcastingEventMsgType  InboundMessageTypes = 7
 )
 
-type Driver struct {
-	firstName string
-	lastName  string
-	shortName string
-	category  byte
-}
+type EntryList []uint16
 
-type Car struct {
+type EntryListCar struct {
 	id              uint16
 	model           byte
 	teamName        string
@@ -45,17 +40,6 @@ type Car struct {
 	cupCategory     byte
 	currentDriverId int8
 	drivers         []Driver
-}
-
-type Lap struct {
-	LapTimeMs      int32
-	CarId          uint16
-	DriverId       uint16
-	Splits         []int32
-	IsInvalid      byte
-	IsValidForBest byte
-	IsOutLap       byte
-	IsInLap        byte
 }
 
 type CarUpdate struct {
@@ -77,6 +61,24 @@ type CarUpdate struct {
 	BestSessionLap Lap
 	LastLap        Lap
 	CurrentLap     Lap
+}
+
+type Lap struct {
+	LapTimeMs      int32
+	CarId          uint16
+	DriverId       uint16
+	Splits         []int32
+	IsInvalid      byte
+	IsValidForBest byte
+	IsOutLap       byte
+	IsInLap        byte
+}
+
+type Driver struct {
+	firstName string
+	lastName  string
+	shortName string
+	category  byte
 }
 
 func MarshalConnectinReq(buffer *bytes.Buffer, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) (ok bool) {
@@ -102,18 +104,18 @@ func MarshalEntryListReq(buffer *bytes.Buffer, connectionId int32) bool {
 	return ok
 }
 
-func UnmarshalEntryListRep(buffer *bytes.Buffer) (connectionId int32, carIds []uint16, ok bool) {
+func UnmarshalEntryListRep(buffer *bytes.Buffer) (connectionId int32, carIds EntryList, ok bool) {
 	ok = readBuffer(buffer, &connectionId)
 	var entryCount uint16
 	ok = ok && readBuffer(buffer, &entryCount)
-	carIds = make([]uint16, entryCount)
+	carIds = make(EntryList, entryCount)
 	for i := uint16(0); ok && i < entryCount; i++ {
 		ok = ok && readBuffer(buffer, &carIds[i])
 	}
 	return connectionId, carIds, ok
 }
 
-func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car Car, ok bool) {
+func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car EntryListCar, ok bool) {
 	ok = readBuffer(buffer, &car.id)
 	ok = ok && readBuffer(buffer, &car.model)
 	ok = ok && readString(buffer, &car.teamName)
