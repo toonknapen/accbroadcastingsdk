@@ -26,7 +26,7 @@ func OnCarUpdate(carUpdate network.CarUpdate) {
 func main() {
 	var wg sync.WaitGroup
 
-	client := network.Client{Wg: &wg, OnCarUpdate: OnCarUpdate}
+	client := network.Client{Wg: &wg, OnEntryList: OnEntryList, OnEntryListCar: OnEntryListCar, OnCarUpdate: OnCarUpdate}
 
 	wg.Add(1)
 	go client.ConnectAndRun("127.0.0.1:9000", "foobar", "asd", 5000, "")
