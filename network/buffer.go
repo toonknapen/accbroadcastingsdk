@@ -30,16 +30,19 @@ const (
 	BroadcastingEventMsgType  InboundMessageTypes = 7
 )
 
+// EntryList provides an array of internal id's of each car in the session
+//
+// This id is used when sending car-info using the `EntryListCar` structure
 type EntryList []uint16
 
 type EntryListCar struct {
-	id              uint16
-	model           byte
-	teamName        string
-	raceNumber      int32
-	cupCategory     byte
-	currentDriverId int8
-	drivers         []Driver
+	Id              uint16 // Id that was already communicated in the EntryList
+	Model           byte
+	TeamName        string
+	RaceNumber      int32
+	CupCategory     byte
+	CurrentDriverId int8
+	Drivers         []Driver
 }
 
 type CarUpdate struct {
@@ -75,10 +78,10 @@ type Lap struct {
 }
 
 type Driver struct {
-	firstName string
-	lastName  string
-	shortName string
-	category  byte
+	FirstName string
+	LastName  string
+	ShortName string
+	Category  byte
 }
 
 func MarshalConnectinReq(buffer *bytes.Buffer, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) (ok bool) {
@@ -116,21 +119,21 @@ func UnmarshalEntryListRep(buffer *bytes.Buffer) (connectionId int32, carIds Ent
 }
 
 func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car EntryListCar, ok bool) {
-	ok = readBuffer(buffer, &car.id)
-	ok = ok && readBuffer(buffer, &car.model)
-	ok = ok && readString(buffer, &car.teamName)
-	ok = ok && readBuffer(buffer, &car.raceNumber)
-	ok = ok && readBuffer(buffer, &car.cupCategory)
-	ok = ok && readBuffer(buffer, &car.currentDriverId)
+	ok = readBuffer(buffer, &car.Id)
+	ok = ok && readBuffer(buffer, &car.Model)
+	ok = ok && readString(buffer, &car.TeamName)
+	ok = ok && readBuffer(buffer, &car.RaceNumber)
+	ok = ok && readBuffer(buffer, &car.CupCategory)
+	ok = ok && readBuffer(buffer, &car.CurrentDriverId)
 
 	var driversOnCarCount uint8
 	ok = ok && readBuffer(buffer, &driversOnCarCount)
-	car.drivers = make([]Driver, driversOnCarCount)
+	car.Drivers = make([]Driver, driversOnCarCount)
 	for i := uint8(0); ok && i < driversOnCarCount; i++ {
-		ok = ok && readString(buffer, &car.drivers[i].firstName)
-		ok = ok && readString(buffer, &car.drivers[i].lastName)
-		ok = ok && readString(buffer, &car.drivers[i].shortName)
-		ok = ok && readBuffer(buffer, &(car.drivers[i].category))
+		ok = ok && readString(buffer, &car.Drivers[i].FirstName)
+		ok = ok && readString(buffer, &car.Drivers[i].LastName)
+		ok = ok && readString(buffer, &car.Drivers[i].ShortName)
+		ok = ok && readBuffer(buffer, &(car.Drivers[i].Category))
 	}
 	return car, ok
 }
