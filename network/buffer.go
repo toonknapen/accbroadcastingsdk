@@ -53,6 +53,18 @@ const (
 	SessionPhaseResultUI     = 8
 )
 
+const (
+	CarLocationNONE    = 0
+	CarLocationTrack   = 1
+	CarLocationPitlane = 2 // not clear yet when the location becomes CarLocationPitlane
+
+	// The location just becomes briefly CarLocationPitEntry and once passed the entry goes
+	// back to CarLocationTrack. When the car crossed the pit-entry can be deduced from the
+	CarLocationPitEntry = 3
+
+	CarLocationPitExit = 4
+)
+
 // EntryList provides an array of internal id's of each car in the session
 //
 // This id is used when sending car-info using the `EntryListCar` structure
@@ -71,8 +83,8 @@ type EntryListCar struct {
 type RealTimeUpdate struct {
 	EventIndex      uint16
 	SessionIndex    uint16
-	SessionType     byte
-	Phase           byte
+	SessionType     byte    // see SessionType<name> constants
+	Phase           byte    // see SessionPhase<name> constants
 	SessionTime     float32 // ms since session started (green light)
 	SessionEndTime  float32 // remaining duration of current session in ms
 	FocusedCarIndex int32
@@ -94,20 +106,27 @@ type RealTimeCarUpdate struct {
 	DriverId       uint16
 	DriverCount    uint8
 	Gear           int8
-	WorldPosX      float32
-	WorldPosY      float32
+	WorldPosX      float32 // always == 0
+	WorldPosY      float32 // always == 0
 	Yaw            float32
-	CarLocation    uint8
+	CarLocation    uint8 // See const declartions CarLocation<name>
 	Kmh            uint16
 	Position       uint16
 	CupPosition    uint16
 	TrackPosition  uint16
 	SplinePosition float32
-	Laps           uint16
+	Laps           uint16 // number of laps completed
 	Delta          int32
 	BestSessionLap Lap
 	LastLap        Lap
-	CurrentLap     Lap
+	CurrentLap     Lap // The splits of the CurrentLap are never filled in
+}
+
+type BroadCastEvent struct {
+	Type   byte
+	Msg    string
+	TimeMs int32 // !SessionTime is a float however (int32 is better than float though)
+	CarId  int32 // !elsewhere this is uint16
 }
 
 type Lap struct {
@@ -232,6 +251,14 @@ func UnmarshalCarUpdateResp(buffer *bytes.Buffer) (carUpdate RealTimeCarUpdate, 
 		carUpdate.CurrentLap, ok = unmarshalLap(buffer)
 	}
 	return carUpdate, ok
+}
+
+func unmarshalBroadCastEvent(buffer *bytes.Buffer) (broadCastEvent BroadCastEvent, ok bool) {
+	ok = readBuffer(buffer, &broadCastEvent.Type)
+	ok = ok && readString(buffer, &broadCastEvent.Msg)
+	ok = ok && readBuffer(buffer, &broadCastEvent.TimeMs)
+	ok = ok && readBuffer(buffer, &broadCastEvent.CarId)
+	return broadCastEvent, ok
 }
 
 func unmarshalLap(buffer *bytes.Buffer) (lap Lap, ok bool) {

@@ -17,6 +17,7 @@ type Client struct {
 	OnEntryListCar      func(EntryListCar)
 	OnRealTimeUpdate    func(RealTimeUpdate)
 	OnRealTimeCarUpdate func(RealTimeCarUpdate)
+	OnBroadCastEvent    func(BroadCastEvent)
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) {
@@ -95,7 +96,10 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 			log.Println("Recvd TrackDataMsgType")
 
 		case BroadcastingEventMsgType:
-			log.Println("Recvd BroadcastingEventMsgType")
+			if client.OnBroadCastEvent != nil {
+				broadCastEvent, _ := unmarshalBroadCastEvent(readBuffer)
+				client.OnBroadCastEvent(broadCastEvent)
+			}
 
 		default:
 			log.Println("WARNING:unrecognised msg-type")

@@ -28,11 +28,18 @@ func OnRealTimeUpdate(realTimeUpdate network.RealTimeUpdate) {
 }
 
 func OnRealTimeCarUpdate(realTimeCarUpdate network.RealTimeCarUpdate) {
-	//log.Println("Recvd RealtimeCarUpdateMsgType")
-	//log.Println(realTimeCarUpdate)
-	//log.Printf("  laps:%d delta:%d", realTimeCarUpdate.Laps, realTimeCarUpdate.Delta)
-	//log.Println("  last-lap:", realTimeCarUpdate.LastLap.LapTimeMs, " splits:", realTimeCarUpdate.LastLap.Splits)
-	//log.Println("  current-lap:", realTimeCarUpdate.CurrentLap.LapTimeMs, " splits:", realTimeCarUpdate.CurrentLap.Splits)
+	log.Println("Recvd RealtimeCarUpdateMsgType")
+	log.Println(realTimeCarUpdate)
+	log.Printf("  driverId:%d driverCount:%d", realTimeCarUpdate.DriverId, realTimeCarUpdate.DriverCount)
+	log.Printf("  posX:%f, posY:%f", realTimeCarUpdate.WorldPosX, realTimeCarUpdate.WorldPosY)
+	log.Printf("  carLocation:%d", realTimeCarUpdate.CarLocation)
+	log.Printf("  laps:%d delta:%d", realTimeCarUpdate.Laps, realTimeCarUpdate.Delta)
+	log.Println("  last-lap:", realTimeCarUpdate.LastLap.LapTimeMs, " splits:", realTimeCarUpdate.LastLap.Splits)
+	log.Println("  current-lap:", realTimeCarUpdate.CurrentLap.LapTimeMs, " splits:", realTimeCarUpdate.CurrentLap.Splits)
+}
+
+func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
+	log.Println("Recvd BroadCastEvent:", broadCastEvent)
 }
 
 func main() {
@@ -44,6 +51,7 @@ func main() {
 		OnEntryListCar:      OnEntryListCar,
 		OnRealTimeUpdate:    OnRealTimeUpdate,
 		OnRealTimeCarUpdate: OnRealTimeCarUpdate,
+		OnBroadCastEvent:    OnBroadCastEvent,
 	}
 
 	wg.Add(1)
