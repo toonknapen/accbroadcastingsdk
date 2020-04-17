@@ -11,11 +11,12 @@ const BROADCASTING_PROTOCOL_VERSION byte = 3
 const ReadBufferSize = 10 * 1024
 
 type Client struct {
-	Wg             *sync.WaitGroup
-	conn           *net.UDPConn
-	OnEntryList    func(EntryList)
-	OnEntryListCar func(EntryListCar)
-	OnCarUpdate    func(CarUpdate)
+	Wg                  *sync.WaitGroup
+	conn                *net.UDPConn
+	OnEntryList         func(EntryList)
+	OnEntryListCar      func(EntryListCar)
+	OnRealTimeUpdate    func(RealTimeUpdate)
+	OnRealTimeCarUpdate func(RealTimeCarUpdate)
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) {
@@ -67,12 +68,15 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 			client.conn.Write(writeBuffer.Bytes())
 
 		case RealtimeUpdateMsgType:
-			log.Println("Recvd RealtimeUpdateMsgType")
+			if client.OnRealTimeUpdate != nil {
+				realTimeUpdate, _ := unmarshalRealTimeUpdate(readBuffer)
+				client.OnRealTimeUpdate(realTimeUpdate)
+			}
 
 		case RealtimeCarUpdateMsgType:
-			if client.OnCarUpdate != nil {
+			if client.OnRealTimeCarUpdate != nil {
 				carUpdate, _ := UnmarshalCarUpdateResp(readBuffer)
-				client.OnCarUpdate(carUpdate)
+				client.OnRealTimeCarUpdate(carUpdate)
 			}
 
 		case EntryListMsgType:

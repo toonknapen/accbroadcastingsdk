@@ -30,6 +30,29 @@ const (
 	BroadcastingEventMsgType  InboundMessageTypes = 7
 )
 
+const (
+	SessionTypePractice        = 0
+	SessionTypeQualifying      = 4
+	SessionTypeSuperpole       = 9
+	SessionTypeRace            = 10
+	SessionTypeHotlap          = 11
+	SessionTypeHotstint        = 12
+	SessionTypeHotlapSuperpole = 13
+	SessionTypeReplay          = 14
+)
+
+const (
+	SessionPhaseNONE         = 0
+	SessionPhaseStarting     = 1
+	SessionPhasePreFormation = 2
+	SessionPhaseFormationLap = 3
+	SessionPhasePreSession   = 4 // during formation-lap
+	SessionPhaseSession      = 5 // as of green light
+	SessionPhaseSessionOver  = 6
+	SessionPhasePostSession  = 7
+	SessionPhaseResultUI     = 8
+)
+
 // EntryList provides an array of internal id's of each car in the session
 //
 // This id is used when sending car-info using the `EntryListCar` structure
@@ -45,7 +68,28 @@ type EntryListCar struct {
 	Drivers         []Driver
 }
 
-type CarUpdate struct {
+type RealTimeUpdate struct {
+	EventIndex      uint16
+	SessionIndex    uint16
+	SessionType     byte
+	Phase           byte
+	SessionTime     float32 // ms since session started (green light)
+	SessionEndTime  float32 // remaining duration of current session in ms
+	FocusedCarIndex int32
+	ActiveCameraSet string
+	ActiveCamera    string
+	CurrentHUDPage  string
+	IsReplayPlaying byte // yes is != 0x00
+	TimeOfDay       float32
+	AmbientTemp     int8
+	TrackTemp       int8
+	Clouds          byte
+	RainLevel       byte
+	Wettness        byte
+	BestSessionLap  Lap
+}
+
+type RealTimeCarUpdate struct {
 	Id             uint16
 	DriverId       uint16
 	DriverCount    uint8
@@ -138,25 +182,31 @@ func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car EntryListCar, ok bool)
 	return car, ok
 }
 
-func UnmarshalLap(buffer *bytes.Buffer) (lap Lap, ok bool) {
-	ok = readBuffer(buffer, &lap.LapTimeMs)
-	ok = ok && readBuffer(buffer, &lap.CarId)
-	ok = ok && readBuffer(buffer, &lap.DriverId)
-
-	var splitCount uint8
-	ok = ok && readBuffer(buffer, &splitCount)
-	lap.Splits = make([]int32, splitCount)
-	for i := uint8(0); ok && i < splitCount; i++ {
-		ok = ok && readBuffer(buffer, &(lap.Splits[i]))
+func unmarshalRealTimeUpdate(buffer *bytes.Buffer) (update RealTimeUpdate, ok bool) {
+	ok = readBuffer(buffer, &update.EventIndex)
+	ok = ok && readBuffer(buffer, &update.SessionIndex)
+	ok = ok && readBuffer(buffer, &update.SessionType)
+	ok = ok && readBuffer(buffer, &update.Phase)
+	ok = ok && readBuffer(buffer, &update.SessionTime)
+	ok = ok && readBuffer(buffer, &update.SessionEndTime)
+	ok = ok && readBuffer(buffer, &update.FocusedCarIndex)
+	ok = ok && readString(buffer, &update.ActiveCameraSet)
+	ok = ok && readString(buffer, &update.ActiveCamera)
+	ok = ok && readBuffer(buffer, &update.IsReplayPlaying)
+	ok = ok && readBuffer(buffer, &update.TimeOfDay)
+	ok = ok && readBuffer(buffer, &update.AmbientTemp)
+	ok = ok && readBuffer(buffer, &update.TrackTemp)
+	ok = ok && readBuffer(buffer, &update.Clouds)
+	ok = ok && readBuffer(buffer, &update.RainLevel)
+	ok = ok && readBuffer(buffer, &update.Wettness)
+	if ok {
+		update.BestSessionLap, ok = unmarshalLap(buffer)
 	}
-	ok = ok && readBuffer(buffer, &lap.IsInvalid)
-	ok = ok && readBuffer(buffer, &lap.IsValidForBest)
-	ok = ok && readBuffer(buffer, &lap.IsOutLap)
-	ok = ok && readBuffer(buffer, &lap.IsInLap)
-	return lap, ok
+
+	return update, ok
 }
 
-func UnmarshalCarUpdateResp(buffer *bytes.Buffer) (carUpdate CarUpdate, ok bool) {
+func UnmarshalCarUpdateResp(buffer *bytes.Buffer) (carUpdate RealTimeCarUpdate, ok bool) {
 	ok = readBuffer(buffer, &carUpdate.Id)
 	ok = ok && readBuffer(buffer, &carUpdate.DriverId)
 	ok = ok && readBuffer(buffer, &carUpdate.DriverCount)
@@ -173,15 +223,33 @@ func UnmarshalCarUpdateResp(buffer *bytes.Buffer) (carUpdate CarUpdate, ok bool)
 	ok = ok && readBuffer(buffer, &carUpdate.Laps)
 	ok = ok && readBuffer(buffer, &carUpdate.Delta)
 	if ok {
-		carUpdate.BestSessionLap, ok = UnmarshalLap(buffer)
+		carUpdate.BestSessionLap, ok = unmarshalLap(buffer)
 	}
 	if ok {
-		carUpdate.LastLap, ok = UnmarshalLap(buffer)
+		carUpdate.LastLap, ok = unmarshalLap(buffer)
 	}
 	if ok {
-		carUpdate.CurrentLap, ok = UnmarshalLap(buffer)
+		carUpdate.CurrentLap, ok = unmarshalLap(buffer)
 	}
 	return carUpdate, ok
+}
+
+func unmarshalLap(buffer *bytes.Buffer) (lap Lap, ok bool) {
+	ok = readBuffer(buffer, &lap.LapTimeMs)
+	ok = ok && readBuffer(buffer, &lap.CarId)
+	ok = ok && readBuffer(buffer, &lap.DriverId)
+
+	var splitCount uint8
+	ok = ok && readBuffer(buffer, &splitCount)
+	lap.Splits = make([]int32, splitCount)
+	for i := uint8(0); ok && i < splitCount; i++ {
+		ok = ok && readBuffer(buffer, &(lap.Splits[i]))
+	}
+	ok = ok && readBuffer(buffer, &lap.IsInvalid)
+	ok = ok && readBuffer(buffer, &lap.IsValidForBest)
+	ok = ok && readBuffer(buffer, &lap.IsOutLap)
+	ok = ok && readBuffer(buffer, &lap.IsInLap)
+	return lap, ok
 }
 
 func writeByteBuffer(buffer *bytes.Buffer, b byte) bool {
