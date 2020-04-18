@@ -59,7 +59,7 @@ const (
 	CarLocationPitlane = 2
 
 	// The location just becomes briefly CarLocationPitEntry and then afterwards becomes CarLocationPitLane.
-	// When sampling at 250ms experience learns that there are 3 updates with CarLocationPitEntry.
+	// toFigureOut: How long exactly is the location CarLocationPitEntry and how to determine the exact time of the Pit-in
 	CarLocationPitEntry = 3
 
 	CarLocationPitExit = 4
