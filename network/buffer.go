@@ -56,10 +56,10 @@ const (
 const (
 	CarLocationNONE    = 0
 	CarLocationTrack   = 1
-	CarLocationPitlane = 2 // not clear yet when the location becomes CarLocationPitlane
+	CarLocationPitlane = 2
 
-	// The location just becomes briefly CarLocationPitEntry and once passed the entry goes
-	// back to CarLocationTrack. When the car crossed the pit-entry can be deduced from the
+	// The location just becomes briefly CarLocationPitEntry and then afterwards becomes CarLocationPitLane.
+	// When sampling at 250ms experience learns that there are 3 updates with CarLocationPitEntry.
 	CarLocationPitEntry = 3
 
 	CarLocationPitExit = 4
@@ -119,7 +119,10 @@ type RealTimeCarUpdate struct {
 	Delta          int32
 	BestSessionLap Lap
 	LastLap        Lap
-	CurrentLap     Lap // The splits of the CurrentLap are never filled in
+
+	// The LapTimeMs is continuously updated during the lap.
+	// The splits of the CurrentLap are however never filled in.
+	CurrentLap Lap
 }
 
 type BroadCastEvent struct {
