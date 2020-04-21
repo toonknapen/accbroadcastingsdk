@@ -2,7 +2,7 @@ package network
 
 import (
 	"bytes"
-	"log"
+	"github.com/rs/zerolog/log"
 	"net"
 	"sync"
 	"time"
@@ -27,21 +27,22 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 StartConnectionLoop:
 	for true {
 		if attempt > 0 {
-			log.Println("Sleeping before retrying ...")
+			log.Info().Msg("Sleeping before retrying ...")
 			time.Sleep(5 * time.Second)
 		}
 		attempt++
 
-		log.Println("Connecting to:", address)
+		log.Print("Connecting to:", address)
 
 		raddr, err := net.ResolveUDPAddr("udp", address)
 		if err != nil {
-			log.Fatal("Fatal when resolving address:", err)
+			log.Error().Msgf("resolving address:%v", err)
+			continue StartConnectionLoop
 		}
 
 		client.conn, err = net.DialUDP("udp", nil, raddr)
 		if err != nil {
-			log.Println("Error when establishing UDP connection:", err, "-> retrying")
+			log.Error().Msgf("Error when establishing UDP connection: %v -> retrying", err)
 		}
 
 		var writeBuffer bytes.Buffer
@@ -49,11 +50,11 @@ StartConnectionLoop:
 		client.conn.SetDeadline(time.Now().Add(time.Second))
 		n, err := client.conn.Write(writeBuffer.Bytes())
 		if n < writeBuffer.Len() {
-			log.Println("Error causing only to write partial message -> restarting connection")
+			log.Error().Msgf("Error causing only to write partial message -> restarting connection")
 			continue StartConnectionLoop
 		}
 		if err != nil {
-			log.Println("Error when writing message-type:", err, "-> restarting connection")
+			log.Error().Msgf("Error when writing message-type: %v -> restarting connection", err)
 			continue StartConnectionLoop
 		}
 
@@ -64,18 +65,18 @@ StartConnectionLoop:
 			client.conn.SetDeadline(time.Now().Add(time.Second))
 			n, err = client.conn.Read(readArray[:])
 			if err != nil {
-				log.Println("Error when reading message-type:", err, "-> restarting connection")
+				log.Error().Msgf("Error when reading message-type: %v -> restarting connection", err)
 				continue StartConnectionLoop
 			}
 			if n == ReadBufferSize {
-				log.Fatal("Buffer not big enough !!!")
+				log.Panic().Msg("Buffer not big enough !!!")
 			}
 
 			// extract msgType
 			readBuffer := bytes.NewBuffer(readArray[:n])
 			msgType, err := readBuffer.ReadByte()
 			if err != nil {
-				log.Println("No msgType -> restarting connection")
+				log.Error().Msg("No msgType -> restarting connection")
 				continue StartConnectionLoop
 			}
 
@@ -85,9 +86,9 @@ StartConnectionLoop:
 			// handle msg
 			switch msgType {
 			case RegistrationResultMsgType:
-				log.Println("Recvd Registration")
+				log.Info().Msg("Recvd Registration")
 				connectionId, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
-				log.Println("Connection:", connectionId, isReadOnly, errMsg)
+				log.Info().Msgf("Connection: %d - %d - %s", connectionId, isReadOnly, errMsg)
 
 				writeBuffer.Reset()
 				MarshalEntryListReq(&writeBuffer, connectionId)
@@ -118,7 +119,7 @@ StartConnectionLoop:
 				}
 
 			case TrackDataMsgType:
-				log.Println("Recvd TrackDataMsgType")
+				log.Debug().Msg("Recvd TrackDataMsgType")
 
 			case BroadcastingEventMsgType:
 				if client.OnBroadCastEvent != nil {
@@ -127,7 +128,7 @@ StartConnectionLoop:
 				}
 
 			default:
-				log.Println("WARNING:unrecognised msg-type")
+				log.Warn().Msg("WARNING:unrecognised msg-type")
 			}
 		}
 	}
@@ -136,7 +137,7 @@ StartConnectionLoop:
 func (client *Client) Disconnect() {
 	err := client.conn.Close()
 	if err != nil {
-		log.Println("WARNING:accbroadcastingsdk.Client: Error while disconnecting", err)
+		log.Warn().Msgf("WARNING:accbroadcastingsdk.Client: Error while disconnecting: %v", err)
 	}
 	if client.Wg != nil {
 		client.Wg.Done()
