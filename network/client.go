@@ -5,10 +5,11 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 )
 
 const BROADCASTING_PROTOCOL_VERSION byte = 3
-const ReadBufferSize = 10 * 1024
+const ReadBufferSize = 32 * 1024
 
 type Client struct {
 	Wg                  *sync.WaitGroup
@@ -21,88 +22,113 @@ type Client struct {
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) {
-	raddr, err := net.ResolveUDPAddr("udp", address)
-	if err != nil {
-		log.Fatal("Fatal when resolving address:", err)
-	}
+	attempt := 0
 
-	client.conn, err = net.DialUDP("udp", nil, raddr)
-	if err != nil {
-		log.Fatal("Fatal when establishing UDP connection:", err)
-	}
+StartConnectionLoop:
+	for true {
+		if attempt > 0 {
+			log.Println("Sleeping before retrying ...")
+			time.Sleep(5 * time.Second)
+		}
+		attempt++
 
-	var writeBuffer bytes.Buffer
-	MarshalConnectinReq(&writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
-	client.conn.Write(writeBuffer.Bytes())
+		log.Println("Connecting to:", address)
 
-	var readArray [ReadBufferSize]byte
-	done := false
-	for !done {
-		// read socket
-		n, err := client.conn.Read(readArray[:])
+		raddr, err := net.ResolveUDPAddr("udp", address)
 		if err != nil {
-			log.Fatal("Error when reading message-type:", err)
-		}
-		if n == ReadBufferSize {
-			log.Fatal("Buffer not big enough !!!")
+			log.Fatal("Fatal when resolving address:", err)
 		}
 
-		// extract msgType
-		readBuffer := bytes.NewBuffer(readArray[:n])
-		msgType, err := readBuffer.ReadByte()
+		client.conn, err = net.DialUDP("udp", nil, raddr)
 		if err != nil {
-			log.Fatal("No msgType")
+			log.Println("Error when establishing UDP connection:", err, "-> retrying")
 		}
 
-		// data
-		// var sessionCarIds []uint16
+		var writeBuffer bytes.Buffer
+		MarshalConnectinReq(&writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
+		client.conn.SetDeadline(time.Now().Add(time.Second))
+		n, err := client.conn.Write(writeBuffer.Bytes())
+		if n < writeBuffer.Len() {
+			log.Println("Error causing only to write partial message -> restarting connection")
+			continue StartConnectionLoop
+		}
+		if err != nil {
+			log.Println("Error when writing message-type:", err, "-> restarting connection")
+			continue StartConnectionLoop
+		}
 
-		// handle msg
-		switch msgType {
-		case RegistrationResultMsgType:
-			log.Println("Recvd Registration")
-			connectionId, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
-			log.Println("Connection:", connectionId, isReadOnly, errMsg)
-
-			writeBuffer.Reset()
-			MarshalEntryListReq(&writeBuffer, connectionId)
-			client.conn.Write(writeBuffer.Bytes())
-
-		case RealtimeUpdateMsgType:
-			if client.OnRealTimeUpdate != nil {
-				realTimeUpdate, _ := unmarshalRealTimeUpdate(readBuffer)
-				client.OnRealTimeUpdate(realTimeUpdate)
+		var readArray [ReadBufferSize]byte
+		done := false
+		for !done {
+			// read socket
+			client.conn.SetDeadline(time.Now().Add(time.Second))
+			n, err = client.conn.Read(readArray[:])
+			if err != nil {
+				log.Println("Error when reading message-type:", err, "-> restarting connection")
+				continue StartConnectionLoop
+			}
+			if n == ReadBufferSize {
+				log.Fatal("Buffer not big enough !!!")
 			}
 
-		case RealtimeCarUpdateMsgType:
-			if client.OnRealTimeCarUpdate != nil {
-				carUpdate, _ := UnmarshalCarUpdateResp(readBuffer)
-				client.OnRealTimeCarUpdate(carUpdate)
+			// extract msgType
+			readBuffer := bytes.NewBuffer(readArray[:n])
+			msgType, err := readBuffer.ReadByte()
+			if err != nil {
+				log.Println("No msgType -> restarting connection")
+				continue StartConnectionLoop
 			}
 
-		case EntryListMsgType:
-			if client.OnEntryList != nil {
-				_, carIds, _ := UnmarshalEntryListRep(readBuffer)
-				client.OnEntryList(carIds)
+			// data
+			// var sessionCarIds []uint16
+
+			// handle msg
+			switch msgType {
+			case RegistrationResultMsgType:
+				log.Println("Recvd Registration")
+				connectionId, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
+				log.Println("Connection:", connectionId, isReadOnly, errMsg)
+
+				writeBuffer.Reset()
+				MarshalEntryListReq(&writeBuffer, connectionId)
+				client.conn.Write(writeBuffer.Bytes())
+
+			case RealtimeUpdateMsgType:
+				if client.OnRealTimeUpdate != nil {
+					realTimeUpdate, _ := unmarshalRealTimeUpdate(readBuffer)
+					client.OnRealTimeUpdate(realTimeUpdate)
+				}
+
+			case RealtimeCarUpdateMsgType:
+				if client.OnRealTimeCarUpdate != nil {
+					carUpdate, _ := UnmarshalCarUpdateResp(readBuffer)
+					client.OnRealTimeCarUpdate(carUpdate)
+				}
+
+			case EntryListMsgType:
+				if client.OnEntryList != nil {
+					_, carIds, _ := UnmarshalEntryListRep(readBuffer)
+					client.OnEntryList(carIds)
+				}
+
+			case EntryListCarMsgType:
+				if client.OnEntryListCar != nil {
+					entryListCar, _ := UnmarshalEntryListCarResp(readBuffer)
+					client.OnEntryListCar(entryListCar)
+				}
+
+			case TrackDataMsgType:
+				log.Println("Recvd TrackDataMsgType")
+
+			case BroadcastingEventMsgType:
+				if client.OnBroadCastEvent != nil {
+					broadCastEvent, _ := unmarshalBroadCastEvent(readBuffer)
+					client.OnBroadCastEvent(broadCastEvent)
+				}
+
+			default:
+				log.Println("WARNING:unrecognised msg-type")
 			}
-
-		case EntryListCarMsgType:
-			if client.OnEntryListCar != nil {
-				entryListCar, _ := UnmarshalEntryListCarResp(readBuffer)
-				client.OnEntryListCar(entryListCar)
-			}
-
-		case TrackDataMsgType:
-			log.Println("Recvd TrackDataMsgType")
-
-		case BroadcastingEventMsgType:
-			if client.OnBroadCastEvent != nil {
-				broadCastEvent, _ := unmarshalBroadCastEvent(readBuffer)
-				client.OnBroadCastEvent(broadCastEvent)
-			}
-
-		default:
-			log.Println("WARNING:unrecognised msg-type")
 		}
 	}
 }
