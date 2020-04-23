@@ -16,6 +16,7 @@ type Client struct {
 	conn                *net.UDPConn
 	OnEntryList         func(EntryList)
 	OnEntryListCar      func(EntryListCar)
+	OnTrackData         func(TrackData)
 	OnRealTimeUpdate    func(RealTimeUpdate)
 	OnRealTimeCarUpdate func(RealTimeCarUpdate)
 	OnBroadCastEvent    func(BroadCastEvent)
@@ -60,9 +61,10 @@ StartConnectionLoop:
 
 		var readArray [ReadBufferSize]byte
 		done := false
+		timeoutDuration := time.Duration(2*msRealtimeUpdateInterval) * time.Millisecond
 		for !done {
 			// read socket
-			client.conn.SetDeadline(time.Now().Add(time.Second))
+			client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 			n, err = client.conn.Read(readArray[:])
 			if err != nil {
 				log.Error().Msgf("Error when reading message-type: %v -> restarting connection", err)
@@ -94,6 +96,10 @@ StartConnectionLoop:
 				MarshalEntryListReq(&writeBuffer, connectionId)
 				client.conn.Write(writeBuffer.Bytes())
 
+				writeBuffer.Reset()
+				MarshalTrackDataReq(&writeBuffer, connectionId)
+				client.conn.Write(writeBuffer.Bytes())
+
 			case RealtimeUpdateMsgType:
 				if client.OnRealTimeUpdate != nil {
 					realTimeUpdate, _ := unmarshalRealTimeUpdate(readBuffer)
@@ -119,7 +125,10 @@ StartConnectionLoop:
 				}
 
 			case TrackDataMsgType:
-				log.Debug().Msg("Recvd TrackDataMsgType")
+				if client.OnTrackData != nil {
+					_, trackData, _ := UnmarshalTrackDataResp(readBuffer)
+					client.OnTrackData(trackData)
+				}
 
 			case BroadcastingEventMsgType:
 				if client.OnBroadCastEvent != nil {

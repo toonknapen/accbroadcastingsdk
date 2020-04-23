@@ -1,54 +1,47 @@
 package main
 
 import (
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/toonknapen/accbroadcastingsdk/network"
-	"log"
+	"os"
 	"sync"
 	"time"
 )
 
 func OnEntryList(entryList network.EntryList) {
-	log.Println("EntryList:", entryList)
+	log.Debug().Msgf("EntryList: %v", entryList)
 }
 
 func OnEntryListCar(entryListCar network.EntryListCar) {
-	log.Println("EntryListCar:", entryListCar)
+	log.Debug().Msgf("EntryListCar: %v", entryListCar)
+}
+
+func OnTrackData(trackData network.TrackData) {
+	log.Debug().Msgf("TrackData: %v", trackData)
 }
 
 func OnRealTimeUpdate(realTimeUpdate network.RealTimeUpdate) {
-	log.Println("Recvd RealTimeUpdate:")
-	log.Println("  SessionType:", realTimeUpdate.SessionType)
-	log.Println("  Phase:", realTimeUpdate.Phase)
-	log.Println("  SessionTime:", realTimeUpdate.SessionTime)
-	log.Println("  SessionEndTime:", realTimeUpdate.SessionEndTime)
-	log.Println("  FocusedCarIndex:", realTimeUpdate.FocusedCarIndex)
-	log.Println("  ActiveCameraSet:", realTimeUpdate.ActiveCameraSet)
-	log.Println("  IsReplayPlaying:", realTimeUpdate.IsReplayPlaying)
-	log.Println("  TimeOfDay:", realTimeUpdate.TimeOfDay)
+	log.Debug().Msgf("RealTimeUpdate: %v", realTimeUpdate)
 }
 
 func OnRealTimeCarUpdate(realTimeCarUpdate network.RealTimeCarUpdate) {
-	log.Println("Recvd RealtimeCarUpdateMsgType")
-	log.Println(realTimeCarUpdate)
-	log.Printf("  driverId:%d driverCount:%d", realTimeCarUpdate.DriverId, realTimeCarUpdate.DriverCount)
-	log.Printf("  posX:%f, posY:%f", realTimeCarUpdate.WorldPosX, realTimeCarUpdate.WorldPosY)
-	log.Printf("  carLocation:%d", realTimeCarUpdate.CarLocation)
-	log.Printf("  laps:%d delta:%d", realTimeCarUpdate.Laps, realTimeCarUpdate.Delta)
-	log.Println("  last-lap:", realTimeCarUpdate.LastLap.LapTimeMs, " splits:", realTimeCarUpdate.LastLap.Splits)
-	log.Println("  current-lap:", realTimeCarUpdate.CurrentLap.LapTimeMs, " splits:", realTimeCarUpdate.CurrentLap.Splits)
+	log.Debug().Msgf("RealtimeCarUpdate: %v", realTimeCarUpdate)
 }
 
 func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
-	log.Println("Recvd BroadCastEvent:", broadCastEvent)
+	log.Debug().Msgf("BroadCastEvent: %v", broadCastEvent)
 }
 
 func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	var wg sync.WaitGroup
 
 	accClient := network.Client{
 		Wg:                  &wg,
 		OnEntryList:         OnEntryList,
 		OnEntryListCar:      OnEntryListCar,
+		OnTrackData:         OnTrackData,
 		OnRealTimeUpdate:    OnRealTimeUpdate,
 		OnRealTimeCarUpdate: OnRealTimeCarUpdate,
 		OnBroadCastEvent:    OnBroadCastEvent,

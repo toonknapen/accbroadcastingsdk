@@ -12,7 +12,7 @@ const (
 	RegisterCommandApplication OutboundMessageTypes = 1
 	// UNREGISTER_COMMAND_APPLICATION OutboundMessageTypes = 9
 	RequestEntryList OutboundMessageTypes = 10
-	// REQUEST_TRACK_DATA             OutboundMessageTypes = 11
+	RequestTrackData OutboundMessageTypes = 11
 	// CHANGE_HUD_PAGE                OutboundMessageTypes = 49
 	// CHANGE_FOCUS                   OutboundMessageTypes = 50
 	// INSTANT_REPLAY_REQUEST         OutboundMessageTypes = 51
@@ -65,6 +65,34 @@ const (
 	CarLocationPitExit = 4
 )
 
+const (
+	TrackNameBrandsHatch = "Brands Hatch Circuit"
+	TrackNameSpa         = "Circuit de Spa-Francorchamps"
+	TrackNameMonza       = "Monza Circuit"
+	TrackNameMisano      = "Misano World Circuit"
+	TrackNamePaulRicard  = "Circuit Paul Ricard"
+	TrackNameSilversone  = "Silverstone"
+	TrackNameHungaroring = "Hungaroring"
+	TrackNameNurburgring = "Nürburgring"
+	TrackNameBarcelona   = "Circuit de Barcelona-Catalunya"
+	TrackNameZolder      = "Circuit Zolder"
+	TrackNameZandvoort   = "Circuit Zandvoort"
+)
+
+const (
+	TrackIdBrandsHatch = 1
+	TrackIdSpa         = 2
+	TrackIdMonza       = 3
+	TrackIdMisano      = 4
+	TrackIdPaulRicard  = 5
+	TrackIdSilverstone = 6
+	TrackIdHungaroring = 7
+	TrackIdNurburgring = 8
+	TrackIdBarcelona   = 9
+	TrackIdZolder      = 10
+	TrackIdZandvoort   = 11
+)
+
 // EntryList provides an array of internal id's of each car in the session
 //
 // This id is used when sending car-info using the `EntryListCar` structure
@@ -78,6 +106,12 @@ type EntryListCar struct {
 	CupCategory     byte
 	CurrentDriverId int8
 	Drivers         []Driver
+}
+
+type TrackData struct {
+	Name   string // Will be equal to one of the constants TrackName<name>
+	Id     int32  // Will be equal to one of the constants TrackId<name>
+	Meters int32
 }
 
 type RealTimeUpdate struct {
@@ -202,6 +236,20 @@ func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car EntryListCar, ok bool)
 		ok = ok && readBuffer(buffer, &(car.Drivers[i].Category))
 	}
 	return car, ok
+}
+
+func MarshalTrackDataReq(buffer *bytes.Buffer, connectionId int32) bool {
+	ok := writeByteBuffer(buffer, RequestTrackData)
+	ok = ok && writeBuffer(buffer, connectionId)
+	return ok
+}
+
+func UnmarshalTrackDataResp(buffer *bytes.Buffer) (connectionId int32, trackData TrackData, ok bool) {
+	ok = readBuffer(buffer, &connectionId)
+	ok = readString(buffer, &trackData.Name)
+	ok = ok && readBuffer(buffer, &trackData.Id)
+	ok = ok && readBuffer(buffer, &trackData.Meters)
+	return connectionId, trackData, ok
 }
 
 func unmarshalRealTimeUpdate(buffer *bytes.Buffer) (update RealTimeUpdate, ok bool) {
