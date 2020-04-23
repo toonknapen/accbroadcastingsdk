@@ -136,21 +136,21 @@ type RealTimeUpdate struct {
 }
 
 type RealTimeCarUpdate struct {
-	Id             uint16 // Id of one of the cars in the EntryList and thus in one of the EntryListCar
-	DriverId       uint16 // index in the EntryListCar.Drivers array to indicate current driver
-	DriverCount    uint8
-	Gear           int8
+	Id             uint16  // Id of one of the cars in the EntryList and thus in one of the EntryListCar
+	DriverId       uint16  // index in the EntryListCar.Drivers array to indicate current driver
+	DriverCount    uint8   // total count of drivers, thus be same as number of drivers declared in EntryListCar
+	Gear           int8    // 0 is neurtral
 	WorldPosX      float32 // always == 0
 	WorldPosY      float32 // always == 0
-	Yaw            float32
-	CarLocation    uint8 // See const declarations CarLocation<name>
-	Kmh            uint16
-	Position       uint16
-	CupPosition    uint16
-	TrackPosition  uint16
-	SplinePosition float32
-	Laps           uint16 // number of laps completed. Thus zero during first lap of the race. Note: also 0 before the start of the race
-	Delta          int32
+	Yaw            float32 // always == 0
+	CarLocation    uint8   // See const declarations CarLocation<name>
+	Kmh            uint16  // self-explanatory
+	Position       uint16  // not sure yet when updated
+	CupPosition    uint16  // not sure yet when updated
+	TrackPosition  uint16  // always == 0
+	SplinePosition float32 // between 0 and 1 indicating where the car is on track, not sure yet what when car is in pit
+	Laps           uint16  // number of laps completed. Thus zero during first lap of the race. Note: also 0 before the start of the race
+	Delta          int32   // delta in respect to its fastest lap in ms
 	BestSessionLap Lap
 	LastLap        Lap
 
