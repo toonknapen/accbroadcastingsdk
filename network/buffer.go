@@ -103,6 +103,87 @@ const (
 	TrackIdZandvoort   = 11
 )
 
+const (
+	NationalityAny             = 0
+	NationalityItaly           = 1
+	NationalityGermany         = 2
+	NationalityFrance          = 3
+	NationalitySpain           = 4
+	NationalityGreatBritain    = 5
+	NationalityHungary         = 6
+	NationalityBelgium         = 7
+	NationalitySwitzerland     = 8
+	NationalityAustria         = 9
+	NationalityRussia          = 10
+	NationalityThailand        = 11
+	NationalityNetherlands     = 12
+	NationalityPoland          = 13
+	NationalityArgentina       = 14
+	NationalityMonaco          = 15
+	NationalityIreland         = 16
+	NationalityBrazil          = 17
+	NationalitySouthAfrica     = 18
+	NationalityPuertoRico      = 19
+	NationalitySlovakia        = 20
+	NationalityOman            = 21
+	NationalityGreece          = 22
+	NationalitySaudiArabia     = 23
+	NationalityNorway          = 24
+	NationalityTurkey          = 25
+	NationalitySouthKorea      = 26
+	NationalityLebanon         = 27
+	NationalityArmenia         = 28
+	NationalityMexico          = 29
+	NationalitySweden          = 30
+	NationalityFinland         = 31
+	NationalityDenmark         = 32
+	NationalityCroatia         = 33
+	NationalityCanada          = 34
+	NationalityChina           = 35
+	NationalityPortugal        = 36
+	NationalitySingapore       = 37
+	NationalityIndonesia       = 38
+	NationalityUSA             = 39
+	NationalityNewZealand      = 40
+	NationalityAustralia       = 41
+	NationalitySanMarino       = 42
+	NationalityUAE             = 43
+	NationalityLuxembourg      = 44
+	NationalityKuwait          = 45
+	NationalityHongKong        = 46
+	NationalityColombia        = 47
+	NationalityJapan           = 48
+	NationalityAndorra         = 49
+	NationalityAzerbaijan      = 50
+	NationalityBulgaria        = 51
+	NationalityCuba            = 52
+	NationalityCzechRepublic   = 53
+	NationalityEstonia         = 54
+	NationalityGeorgia         = 55
+	NationalityIndia           = 56
+	NationalityIsrael          = 57
+	NationalityJamaica         = 58
+	NationalityLatvia          = 59
+	NationalityLithuania       = 60
+	NationalityMacau           = 61
+	NationalityMalaysia        = 62
+	NationalityNepal           = 63
+	NationalityNewCaledonia    = 64
+	NationalityNigeria         = 65
+	NationalityNorthernIreland = 66
+	NationalityPapuaNewGuinea  = 67
+	NationalityPhilippines     = 68
+	NationalityQatar           = 69
+	NationalityRomania         = 70
+	NationalityScotland        = 71
+	NationalitySerbia          = 72
+	NationalitySlovenia        = 73
+	NationalityTaiwan          = 74
+	NationalityUkraine         = 75
+	NationalityVenezuela       = 76
+	NationalityWales           = 77
+)
+
 // EntryList provides an array of internal id's of each car in the session
 //
 // This id is used when sending car-info using the `EntryListCar` structure. These id's seem to be always
@@ -116,6 +197,7 @@ type EntryListCar struct {
 	RaceNumber      int32 // the number shown on the car-body and in the leaderboard
 	CupCategory     byte
 	CurrentDriverId int8
+	Nationality     uint16 // of the car (thus team I assume?)
 	Drivers         []Driver
 }
 
@@ -189,10 +271,11 @@ type Lap struct {
 }
 
 type Driver struct {
-	FirstName string
-	LastName  string
-	ShortName string
-	Category  byte
+	FirstName   string
+	LastName    string
+	ShortName   string
+	Category    byte
+	Nationality uint16
 }
 
 func MarshalConnectinReq(buffer *bytes.Buffer, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) (ok bool) {
@@ -205,11 +288,12 @@ func MarshalConnectinReq(buffer *bytes.Buffer, displayName string, connectionPas
 	return ok
 }
 
-func UnmarshalConnectionResp(buffer *bytes.Buffer) (connectionId int32, isReadOnly int8, errMsg string, ok bool) {
+func UnmarshalConnectionResp(buffer *bytes.Buffer) (connectionId int32, connectionSuccess int8, isReadOnly int8, errMsg string, ok bool) {
 	ok = readBuffer(buffer, &connectionId)
+	ok = ok && readBuffer(buffer, &connectionSuccess)
 	ok = ok && readBuffer(buffer, &isReadOnly)
 	ok = ok && readString(buffer, &errMsg)
-	return connectionId, isReadOnly, errMsg, ok
+	return connectionId, connectionSuccess, isReadOnly, errMsg, ok
 }
 
 func MarshalEntryListReq(buffer *bytes.Buffer, connectionId int32) bool {
@@ -236,6 +320,7 @@ func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car EntryListCar, ok bool)
 	ok = ok && readBuffer(buffer, &car.RaceNumber)
 	ok = ok && readBuffer(buffer, &car.CupCategory)
 	ok = ok && readBuffer(buffer, &car.CurrentDriverId)
+	ok = ok && readBuffer(buffer, &car.Nationality)
 
 	var driversOnCarCount uint8
 	ok = ok && readBuffer(buffer, &driversOnCarCount)
@@ -245,6 +330,7 @@ func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car EntryListCar, ok bool)
 		ok = ok && readString(buffer, &car.Drivers[i].LastName)
 		ok = ok && readString(buffer, &car.Drivers[i].ShortName)
 		ok = ok && readBuffer(buffer, &(car.Drivers[i].Category))
+		ok = ok && readBuffer(buffer, &(car.Drivers[i].Nationality))
 	}
 	return car, ok
 }

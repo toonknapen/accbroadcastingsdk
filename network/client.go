@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-const BROADCASTING_PROTOCOL_VERSION byte = 3
+const BROADCASTING_PROTOCOL_VERSION byte = 4
 const ReadBufferSize = 32 * 1024
 
 type Client struct {
@@ -67,7 +67,7 @@ StartConnectionLoop:
 			client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 			n, err = client.conn.Read(readArray[:])
 			if err != nil {
-				log.Error().Msgf("Error when reading message-type: %v -> restarting connection", err)
+				log.Error().Msgf("Error when reading message: '%v' -> restarting connection", err)
 				continue StartConnectionLoop
 			}
 			if n == ReadBufferSize {
@@ -89,16 +89,32 @@ StartConnectionLoop:
 			switch msgType {
 			case RegistrationResultMsgType:
 				log.Info().Msg("Recvd Registration")
-				connectionId, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
-				log.Info().Msgf("Connection: %d - %d - %s", connectionId, isReadOnly, errMsg)
+				connectionId, connectionSuccess, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
+				log.Info().Msgf("Connection: %d - %d - %d - %s", connectionId, connectionSuccess, isReadOnly, errMsg)
 
 				writeBuffer.Reset()
 				MarshalEntryListReq(&writeBuffer, connectionId)
-				client.conn.Write(writeBuffer.Bytes())
+				n, err = client.conn.Write(writeBuffer.Bytes())
+				if n != writeBuffer.Len() {
+					log.Error().Msgf("Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, writeBuffer.Len())
+					continue StartConnectionLoop
+				}
+				if err != nil {
+					log.Error().Msgf("Error while writing entrylist-req, %v", err)
+					continue StartConnectionLoop
+				}
 
 				writeBuffer.Reset()
 				MarshalTrackDataReq(&writeBuffer, connectionId)
-				client.conn.Write(writeBuffer.Bytes())
+				n, err = client.conn.Write(writeBuffer.Bytes())
+				if n != writeBuffer.Len() {
+					log.Error().Msgf("Error while writing trackdata-req, wrote only %d bytes while it should have been %d", n, writeBuffer.Len())
+					continue StartConnectionLoop
+				}
+				if err != nil {
+					log.Error().Msgf("Error while writing trackdata-req, %v", err)
+					continue StartConnectionLoop
+				}
 
 			case RealtimeUpdateMsgType:
 				if client.OnRealTimeUpdate != nil {
