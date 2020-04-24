@@ -66,6 +66,16 @@ const (
 )
 
 const (
+	CarModelMercedes    = 1
+	CarModelFerrari     = 2
+	CarModelLexus       = 15
+	CarModelLamborghini = 16
+	CarModelAudi        = 19
+	CarModelAstonMartin = 20
+	CarModelPorsche     = 23
+)
+
+const (
 	TrackNameBrandsHatch = "Brands Hatch Circuit"
 	TrackNameSpa         = "Circuit de Spa-Francorchamps"
 	TrackNameMonza       = "Monza Circuit"
@@ -100,7 +110,7 @@ type EntryList []uint16
 
 type EntryListCar struct {
 	Id              uint16 // Id that was already communicated in the EntryList
-	Model           byte
+	Model           byte   // One of constants CarModel<name>
 	TeamName        string
 	RaceNumber      int32
 	CupCategory     byte
