@@ -105,14 +105,15 @@ const (
 
 // EntryList provides an array of internal id's of each car in the session
 //
-// This id is used when sending car-info using the `EntryListCar` structure
+// This id is used when sending car-info using the `EntryListCar` structure. These id's seem to be always
+// 0-based and incrementing sequentially (thus [0, 1, 2, 3, 4, 5, ... n-1])
 type EntryList []uint16
 
 type EntryListCar struct {
 	Id              uint16 // Id that was already communicated in the EntryList
 	Model           byte   // One of constants CarModel<name>
 	TeamName        string
-	RaceNumber      int32
+	RaceNumber      int32 // the number shown on the car-body and in the leaderboard
 	CupCategory     byte
 	CurrentDriverId int8
 	Drivers         []Driver
@@ -125,8 +126,8 @@ type TrackData struct {
 }
 
 type RealTimeUpdate struct {
-	EventIndex      uint16
-	SessionIndex    uint16
+	EventIndex      uint16  // >= 0
+	SessionIndex    uint16  // >= 0
 	SessionType     byte    // see SessionType<name> constants
 	Phase           byte    // see SessionPhase<name> constants
 	SessionTime     float32 // ms since session started (green light)
@@ -170,10 +171,10 @@ type RealTimeCarUpdate struct {
 }
 
 type BroadCastEvent struct {
-	Type   byte
-	Msg    string
-	TimeMs int32 // !SessionTime is a float however (int32 is better than float though)
-	CarId  int32 // !elsewhere this is uint16
+	Type   byte   // ?
+	Msg    string // ?
+	TimeMs int32  // !SessionTime is a float however (int32 is better than float though)
+	CarId  int32  // !elsewhere this is uint16
 }
 
 type Lap struct {
