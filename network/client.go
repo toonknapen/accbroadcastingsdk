@@ -22,7 +22,8 @@ type Client struct {
 	OnBroadCastEvent    func(BroadCastEvent)
 }
 
-func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) {
+func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) {
+	timeoutDuration := time.Duration(timeoutMs) * time.Millisecond
 	attempt := 0
 
 StartConnectionLoop:
@@ -48,7 +49,7 @@ StartConnectionLoop:
 
 		var writeBuffer bytes.Buffer
 		MarshalConnectinReq(&writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
-		client.conn.SetDeadline(time.Now().Add(time.Second))
+		client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 		n, err := client.conn.Write(writeBuffer.Bytes())
 		if n < writeBuffer.Len() {
 			log.Error().Msgf("Error causing only to write partial message -> restarting connection")
@@ -61,11 +62,12 @@ StartConnectionLoop:
 
 		var readArray [ReadBufferSize]byte
 		done := false
-		timeoutDuration := time.Duration(2*msRealtimeUpdateInterval) * time.Millisecond
 		for !done {
 			// read socket
+			log.Debug().Msg("Reading ...")
 			client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 			n, err = client.conn.Read(readArray[:])
+			log.Debug().Msg("Read")
 			if err != nil {
 				log.Error().Msgf("Error when reading message: '%v' -> restarting connection", err)
 				continue StartConnectionLoop
