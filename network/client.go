@@ -21,6 +21,8 @@ const ReadBufferSize = 32 * 1024
 //    - OnRealTimeUpdate
 //    - OnRealTimeCarUpdate (for each car)
 //
+// For events with a fixed entry-list, no entry-list updates are thus received anymore
+//
 // Since this interface is currently not sending broadcasting intructions, BroadCastEvent's are not received
 type Client struct {
 	conn                *net.UDPConn
