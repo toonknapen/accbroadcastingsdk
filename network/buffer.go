@@ -87,6 +87,7 @@ const (
 	TrackNameBarcelona   = "Circuit de Barcelona-Catalunya"
 	TrackNameZolder      = "Circuit Zolder"
 	TrackNameZandvoort   = "Circuit Zandvoort"
+	TrackNameBathurst    = "Mount Panorama Circuit"
 )
 
 const (
@@ -101,6 +102,7 @@ const (
 	TrackIdBarcelona   = 9
 	TrackIdZolder      = 10
 	TrackIdZandvoort   = 11
+	TrackIdBathurst    = 13
 )
 
 const (
