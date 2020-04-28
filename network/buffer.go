@@ -190,6 +190,8 @@ const (
 // 0-based and incrementing sequentially (thus [0, 1, 2, 3, 4, 5, ... n-1])
 type EntryList []uint16
 
+// If an entry list is defined by the server admin, the entry-list will only be received once when
+// connecting. Thus also when a new session starts, the entry-list is not re-send.
 type EntryListCar struct {
 	Id              uint16 // Id that was already communicated in the EntryList
 	Model           byte   // One of constants CarModel<name>
@@ -201,15 +203,17 @@ type EntryListCar struct {
 	Drivers         []Driver
 }
 
+// Note that the track-data is not resend when a new session starts
 type TrackData struct {
 	Name   string // Will be equal to one of the constants TrackName<name>
 	Id     int32  // Will be equal to one of the constants TrackId<name>
 	Meters int32
 }
 
+// RealTimeUpdate is the first data recv'd when connecting to the broadcasting-interface (AFAICT)
 type RealTimeUpdate struct {
-	EventIndex      uint16  // >= 0
-	SessionIndex    uint16  // >= 0
+	EventIndex      uint16  // AFAICT always starts at 0
+	SessionIndex    uint16  // AFAICT always starts t 0 when connecting, even when there were already sessions before the UDP connection was established
 	SessionType     byte    // see SessionType<name> constants
 	Phase           byte    // see SessionPhase<name> constants
 	SessionTime     float32 // ms since session started (green light)

@@ -38,17 +38,16 @@ func main() {
 	var wg sync.WaitGroup
 
 	accClient := network.Client{
-		Wg:                  &wg,
+		OnRealTimeUpdate:    OnRealTimeUpdate,
+		OnRealTimeCarUpdate: OnRealTimeCarUpdate,
 		OnEntryList:         OnEntryList,
 		OnEntryListCar:      OnEntryListCar,
 		OnTrackData:         OnTrackData,
-		OnRealTimeUpdate:    OnRealTimeUpdate,
-		OnRealTimeCarUpdate: OnRealTimeCarUpdate,
 		OnBroadCastEvent:    OnBroadCastEvent,
 	}
 
 	wg.Add(1)
-	go accClient.ConnectAndRun("127.0.0.1:9000", "foobar", "asd", 1000, "", 5000)
+	go accClient.ConnectAndRun("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
 
 	time.Sleep(10000 * time.Second)
 	accClient.Disconnect()

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"github.com/rs/zerolog/log"
 	"net"
-	"sync"
 	"time"
 )
 
@@ -12,12 +11,11 @@ const BROADCASTING_PROTOCOL_VERSION byte = 4
 const ReadBufferSize = 32 * 1024
 
 type Client struct {
-	Wg                  *sync.WaitGroup
 	conn                *net.UDPConn
+	OnRealTimeUpdate    func(RealTimeUpdate) // seems to be received first always
 	OnEntryList         func(EntryList)
 	OnEntryListCar      func(EntryListCar)
 	OnTrackData         func(TrackData)
-	OnRealTimeUpdate    func(RealTimeUpdate)
 	OnRealTimeCarUpdate func(RealTimeCarUpdate)
 	OnBroadCastEvent    func(BroadCastEvent)
 }
@@ -64,10 +62,8 @@ StartConnectionLoop:
 		done := false
 		for !done {
 			// read socket
-			log.Debug().Msg("Reading ...")
 			client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 			n, err = client.conn.Read(readArray[:])
-			log.Debug().Msg("Read")
 			if err != nil {
 				log.Error().Msgf("Error when reading message: '%v' -> restarting connection", err)
 				continue StartConnectionLoop
@@ -165,8 +161,5 @@ func (client *Client) Disconnect() {
 	err := client.conn.Close()
 	if err != nil {
 		log.Warn().Msgf("WARNING:accbroadcastingsdk.Client: Error while disconnecting: %v", err)
-	}
-	if client.Wg != nil {
-		client.Wg.Done()
 	}
 }
