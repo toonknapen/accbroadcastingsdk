@@ -10,13 +10,25 @@ import (
 const BROADCASTING_PROTOCOL_VERSION byte = 4
 const ReadBufferSize = 32 * 1024
 
+// At first connection, the callbacks are initially called in following order
+//    - OnRealTimeUpdate
+//    - OnRealTimeCarUpdate (for each car)
+//    - OnEntryList
+//    - OnEntryListCar (for each car)
+//    - OnTrackData
+//
+// As of then at every refresh following are received (including when the session changes),
+//    - OnRealTimeUpdate
+//    - OnRealTimeCarUpdate (for each car)
+//
+// Since this interface is currently not sending broadcasting intructions, BroadCastEvent's are not received
 type Client struct {
 	conn                *net.UDPConn
-	OnRealTimeUpdate    func(RealTimeUpdate) // seems to be received first always
+	OnRealTimeUpdate    func(RealTimeUpdate)    // seems to be received first always when the connection is established
+	OnRealTimeCarUpdate func(RealTimeCarUpdate) // seems to be received righ after RealTimeUpdate after the connection is established
 	OnEntryList         func(EntryList)
 	OnEntryListCar      func(EntryListCar)
 	OnTrackData         func(TrackData)
-	OnRealTimeCarUpdate func(RealTimeCarUpdate)
 	OnBroadCastEvent    func(BroadCastEvent)
 }
 
