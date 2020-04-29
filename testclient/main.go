@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/toonknapen/accbroadcastingsdk/network"
@@ -9,24 +10,49 @@ import (
 	"time"
 )
 
-func OnEntryList(entryList network.EntryList) {
-	log.Debug().Msgf("EntryList: %v", entryList)
-}
-
-func OnEntryListCar(entryListCar network.EntryListCar) {
-	log.Debug().Msgf("EntryListCar: %v", entryListCar)
-}
-
-func OnTrackData(trackData network.TrackData) {
-	log.Debug().Msgf("TrackData: %v", trackData)
-}
-
 func OnRealTimeUpdate(realTimeUpdate network.RealTimeUpdate) {
-	log.Debug().Msgf("RealTimeUpdate: %v", realTimeUpdate)
+	raw, err := json.Marshal(realTimeUpdate)
+	if err != nil {
+		log.Error().Msgf("Error while marshaling realtimeupdate: %v", err)
+		return
+	}
+	log.Debug().Msgf("RealTimeUpdate: %s", raw)
 }
 
 func OnRealTimeCarUpdate(realTimeCarUpdate network.RealTimeCarUpdate) {
-	log.Debug().Msgf("RealtimeCarUpdate: %v", realTimeCarUpdate)
+	raw, err := json.Marshal(realTimeCarUpdate)
+	if err != nil {
+		log.Error().Msgf("Error while marshaling realtimecarupdate: %v", err)
+		return
+	}
+	log.Debug().Msgf("RealtimeCarUpdate: %s", raw)
+}
+
+func OnEntryList(entryList network.EntryList) {
+	raw, err := json.Marshal(entryList)
+	if err != nil {
+		log.Error().Msgf("Error while marshaling entrylist: %v", err)
+		return
+	}
+	log.Debug().Msgf("EntryList: %s", raw)
+}
+
+func OnEntryListCar(entryListCar network.EntryListCar) {
+	raw, err := json.Marshal(entryListCar)
+	if err != nil {
+		log.Error().Msgf("Error while marshaling entrylistcar: %v", err)
+		return
+	}
+	log.Debug().Msgf("EntryListCar: %s", raw)
+}
+
+func OnTrackData(trackData network.TrackData) {
+	raw, err := json.Marshal(trackData)
+	if err != nil {
+		log.Error().Msgf("Error while marshaling trackdata: %v", err)
+		return
+	}
+	log.Debug().Msgf("TrackData: %s", raw)
 }
 
 func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {

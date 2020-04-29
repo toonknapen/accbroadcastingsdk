@@ -186,6 +186,8 @@ const (
 	NationalityWales           = 77
 )
 
+const InvalidSectorTime = (2 << 30) - 1
+
 // EntryList provides an array of internal id's of each car in the session
 //
 // This id is used when sending car-info using the `EntryListCar` structure. These id's seem to be always
@@ -425,6 +427,10 @@ func unmarshalLap(buffer *bytes.Buffer) (lap Lap, ok bool) {
 	lap.Splits = make([]int32, splitCount)
 	for i := uint8(0); ok && i < splitCount; i++ {
 		ok = ok && readBuffer(buffer, &(lap.Splits[i]))
+
+		if lap.Splits[i] == InvalidSectorTime {
+			lap.Splits[i] = 0
+		}
 	}
 	ok = ok && readBuffer(buffer, &lap.IsInvalid)
 	ok = ok && readBuffer(buffer, &lap.IsValidForBest)
