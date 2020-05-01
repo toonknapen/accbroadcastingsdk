@@ -288,7 +288,7 @@ type Driver struct {
 
 func MarshalConnectinReq(buffer *bytes.Buffer, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) (ok bool) {
 	ok = writeByteBuffer(buffer, RegisterCommandApplication)
-	ok = ok && writeByteBuffer(buffer, BROADCASTING_PROTOCOL_VERSION)
+	ok = ok && writeByteBuffer(buffer, BroadcastingProtocolVersion)
 	ok = ok && writeString(buffer, displayName)
 	ok = ok && writeString(buffer, connectionPassword)
 	ok = ok && writeBuffer(buffer, msRealtimeUpdateInterval)

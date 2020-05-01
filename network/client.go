@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const BROADCASTING_PROTOCOL_VERSION byte = 4
+const BroadcastingProtocolVersion byte = 4
 const ReadBufferSize = 32 * 1024
 
 // At first connection, the callbacks are initially called in following order
