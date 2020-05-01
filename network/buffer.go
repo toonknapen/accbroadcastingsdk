@@ -3,7 +3,7 @@ package network
 import (
 	"bytes"
 	"encoding/binary"
-	"log"
+	"github.com/rs/zerolog/log"
 )
 
 type OutboundMessageTypes = byte
@@ -442,7 +442,7 @@ func unmarshalLap(buffer *bytes.Buffer) (lap Lap, ok bool) {
 func writeByteBuffer(buffer *bytes.Buffer, b byte) bool {
 	err := buffer.WriteByte(b)
 	if err != nil {
-		log.Println("Error in writeBuffer:", err)
+		log.Error().Msgf("Error in writeByteBuffer: %v", err)
 		return false
 	}
 	return true
@@ -451,7 +451,7 @@ func writeByteBuffer(buffer *bytes.Buffer, b byte) bool {
 func writeBuffer(buffer *bytes.Buffer, data interface{}) bool {
 	err := binary.Write(buffer, binary.LittleEndian, data)
 	if err != nil {
-		log.Println("Error in writeBuffer:", err)
+		log.Error().Msgf("Error in writeBuffer: %v", err)
 		return false
 	}
 	return true
@@ -460,7 +460,7 @@ func writeBuffer(buffer *bytes.Buffer, data interface{}) bool {
 func readBuffer(buffer *bytes.Buffer, data interface{}) bool {
 	err := binary.Read(buffer, binary.LittleEndian, data)
 	if err != nil {
-		log.Println("Error in readBuffer:", err)
+		log.Error().Msgf("Error in readBuffer: %v:%+v", err, data)
 		return false
 	}
 	return true
@@ -470,7 +470,7 @@ func writeString(buffer *bytes.Buffer, s string) bool {
 	length := int16(len(s))
 	err := binary.Write(buffer, binary.LittleEndian, length)
 	if err != nil {
-		log.Println("Error in writeString:", err)
+		log.Error().Msgf("Error in writeString: %v", err)
 		return false
 	}
 	buffer.Write([]byte(s))
@@ -481,13 +481,13 @@ func readString(buffer *bytes.Buffer, s *string) bool {
 	var length int16
 	err := binary.Read(buffer, binary.LittleEndian, &length)
 	if err != nil {
-		log.Println("Error in readString:", err)
+		log.Error().Msgf("Error in readString: %v", err)
 		return false
 	}
 	stringBuffer := make([]byte, length)
 	err = binary.Read(buffer, binary.LittleEndian, &stringBuffer)
 	if err != nil {
-		log.Println("Error while reading in readStr:", err)
+		log.Error().Msgf("Error while reading in readStr: %v", err)
 		return false
 	}
 	*s = string(stringBuffer)

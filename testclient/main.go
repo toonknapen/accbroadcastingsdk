@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/toonknapen/accbroadcastingsdk/network"
 	"os"
-	"sync"
+	"runtime"
 	"time"
 )
 
@@ -60,8 +60,9 @@ func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
 }
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	var wg sync.WaitGroup
+	noColor := runtime.GOOS == "windows"
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: noColor, TimeFormat: zerolog.TimeFieldFormat})
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 
 	accClient := network.Client{
 		OnRealTimeUpdate:    OnRealTimeUpdate,
@@ -72,7 +73,6 @@ func main() {
 		OnBroadCastEvent:    OnBroadCastEvent,
 	}
 
-	wg.Add(1)
 	go accClient.ConnectAndRun("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
 
 	time.Sleep(10000 * time.Second)
