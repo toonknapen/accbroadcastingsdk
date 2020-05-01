@@ -62,7 +62,7 @@ func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
 func main() {
 	noColor := runtime.GOOS == "windows"
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: noColor, TimeFormat: zerolog.TimeFieldFormat})
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	accClient := network.Client{
 		OnRealTimeUpdate:    OnRealTimeUpdate,
@@ -75,6 +75,6 @@ func main() {
 
 	go accClient.ConnectAndRun("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
 
-	time.Sleep(10000 * time.Second)
+	time.Sleep(24 * time.Hour)
 	accClient.Disconnect()
 }

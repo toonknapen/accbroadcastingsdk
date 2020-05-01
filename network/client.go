@@ -46,7 +46,7 @@ StartConnectionLoop:
 		}
 		attempt++
 
-		log.Print("Connecting to:", address)
+		log.Info().Msgf("Connecting to: %s", address)
 
 		raddr, err := net.ResolveUDPAddr("udp", address)
 		if err != nil {
@@ -131,8 +131,8 @@ StartConnectionLoop:
 			case RealtimeUpdateMsgType:
 				if client.OnRealTimeUpdate != nil {
 					bufferLen := readBuffer.Len()
-					if bufferLen != 82 {
-						log.Printf("RealTimeUpdate only %d bytes (expected 82), dropping it", bufferLen)
+					if bufferLen < 81 {
+						log.Error().Msgf("RealTimeUpdate only %d bytes (expected 81), dropping it", bufferLen)
 						continue
 					}
 					realTimeUpdate, _ := unmarshalRealTimeUpdate(readBuffer)
