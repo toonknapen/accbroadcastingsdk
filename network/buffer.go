@@ -260,9 +260,20 @@ type RealTimeCarUpdate struct {
 	CurrentLap Lap
 }
 
+const (
+	BroadCastEventTypeNone            = 0
+	BroadCastEventTypeGreenFlag       = 1
+	BroadCastEventTypeSessionOver     = 2
+	BroadCastEventTypePenaltyCommMsg  = 3
+	BroadCastEventTypeAccident        = 4
+	BroadCastEventTypeLapCompleted    = 5
+	BroadCastEventTypeBestSessionLap  = 6
+	BroadCastEventTypeBestPersonalLap = 7
+)
+
 type BroadCastEvent struct {
-	Type   byte   // ?
-	Msg    string // ?
+	Type   byte   // BroadCastEventType<something>
+	Msg    string // message (laptime often)
 	TimeMs int32  // !SessionTime is a float however (int32 is better than float though)
 	CarId  int32  // !elsewhere this is uint16
 }
