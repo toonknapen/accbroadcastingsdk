@@ -39,11 +39,14 @@ type Client struct {
 	OnTrackData      func(TrackData)
 	OnBroadCastEvent func(BroadCastEvent)
 
-	conn      *net.UDPConn
-	entryList EntryList
+	conn                 *net.UDPConn
+	entryList            EntryList // nil until first entry-list is received
+	lastEntryListRequest time.Time // do not ask more than once per sec
+	carIdWarnedMissing   map[uint16]bool
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) {
+	client.carIdWarnedMissing = make(map[uint16]bool)
 	timeoutDuration := time.Duration(timeoutMs) * time.Millisecond
 	attempt := 0
 
@@ -103,14 +106,11 @@ StartConnectionLoop:
 				continue StartConnectionLoop
 			}
 
-			var globalConnectionId int32
-
 			// handle msg
 			switch msgType {
 			case RegistrationResultMsgType:
 				log.Info().Msg("Recvd Registration")
 				connectionId, connectionSuccess, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
-				globalConnectionId = connectionId
 				log.Info().Msgf("Connection: %d - %d - %d - %s", connectionId, connectionSuccess, isReadOnly, errMsg)
 
 				errorSendReqEntryList := client.sendReqEntryList(&writeBuffer, connectionId)
@@ -137,24 +137,33 @@ StartConnectionLoop:
 				}
 
 			case RealtimeCarUpdateMsgType:
-				if client.OnRealTimeCarUpdate != nil {
-					realTimeCarUpdate, _ := UnmarshalCarUpdateResp(readBuffer)
+				if client.entryList == nil {
+					log.Info().Msgf("RealTimeCarUpdate not handled as entrylist not received yet")
+				} else {
+					if client.OnRealTimeCarUpdate != nil {
+						realTimeCarUpdate, _ := UnmarshalCarUpdateResp(readBuffer)
 
-					// check if car is known in entryList, otherwise ask for new entryList
-					carId := realTimeCarUpdate.Id
-					found := false
-					for _, v := range client.entryList {
-						if v == carId {
-							found = true
-							break
+						// check if car is known in entryList, otherwise ask for new entryList
+						carId := realTimeCarUpdate.Id
+						found := false
+						for _, v := range client.entryList {
+							if v == carId {
+								found = true
+								break
+							}
 						}
-					}
 
-					if found {
-						client.OnRealTimeCarUpdate(realTimeCarUpdate)
-					} else {
-						log.Info().Msgf("Car id %d unknown, fetching new entry-list", carId)
-						client.sendReqEntryList(&writeBuffer, globalConnectionId)
+						if found {
+							client.OnRealTimeCarUpdate(realTimeCarUpdate)
+						} else {
+							//log.Info().Msgf("Car id %d unknown, fetching new entry-list", carId)
+							//client.sendReqEntryList(&writeBuffer, globalConnectionId)
+							reportedMissing := client.carIdWarnedMissing[carId]
+							if !reportedMissing {
+								log.Warn().Msgf("CarId %d is not in entry-list and will not be followed", carId)
+								client.carIdWarnedMissing[carId] = true
+							}
+						}
 					}
 				}
 
@@ -194,8 +203,15 @@ StartConnectionLoop:
 
 func (client *Client) sendReqEntryList(writeBuffer *bytes.Buffer, connectionId int32) (error bool) {
 	writeBuffer.Reset()
+	now := time.Now()
+	if now.Sub(client.lastEntryListRequest) < time.Second {
+		return
+	}
+
+	client.lastEntryListRequest = now
 	MarshalEntryListReq(writeBuffer, connectionId)
 	n, err := client.conn.Write(writeBuffer.Bytes())
+	log.Info().Msg("Send new EntryList request")
 	if n != writeBuffer.Len() {
 		log.Error().Msgf("Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, writeBuffer.Len())
 		error = true

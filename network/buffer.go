@@ -310,15 +310,15 @@ func MarshalEntryListReq(buffer *bytes.Buffer, connectionId int32) bool {
 	return ok
 }
 
-func UnmarshalEntryListRep(buffer *bytes.Buffer) (connectionId int32, carIds EntryList, ok bool) {
+func UnmarshalEntryListRep(buffer *bytes.Buffer) (connectionId int32, entryList EntryList, ok bool) {
 	ok = readBuffer(buffer, &connectionId)
 	var entryCount uint16
 	ok = ok && readBuffer(buffer, &entryCount)
-	carIds = make(EntryList, entryCount)
+	entryList = make(EntryList, entryCount)
 	for i := uint16(0); ok && i < entryCount; i++ {
-		ok = ok && readBuffer(buffer, &carIds[i])
+		ok = ok && readBuffer(buffer, &entryList[i])
 	}
-	return connectionId, carIds, ok
+	return connectionId, entryList, ok
 }
 
 func UnmarshalEntryListCarResp(buffer *bytes.Buffer) (car EntryListCar, ok bool) {
