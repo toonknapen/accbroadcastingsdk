@@ -357,28 +357,33 @@ func UnmarshalTrackDataResp(buffer *bytes.Buffer) (connectionId int32, trackData
 	return connectionId, trackData, ok
 }
 
-func unmarshalRealTimeUpdate(buffer *bytes.Buffer) (update RealTimeUpdate, ok bool) {
-	ok = readBuffer(buffer, &update.EventIndex)
-	ok = ok && readBuffer(buffer, &update.SessionIndex)
-	ok = ok && readBuffer(buffer, &update.SessionType)
-	ok = ok && readBuffer(buffer, &update.Phase)
-	ok = ok && readBuffer(buffer, &update.SessionTime)
-	ok = ok && readBuffer(buffer, &update.SessionEndTime)
-	ok = ok && readBuffer(buffer, &update.FocusedCarIndex)
-	ok = ok && readString(buffer, &update.ActiveCameraSet)
-	ok = ok && readString(buffer, &update.ActiveCamera)
-	ok = ok && readBuffer(buffer, &update.IsReplayPlaying)
-	ok = ok && readBuffer(buffer, &update.TimeOfDay)
-	ok = ok && readBuffer(buffer, &update.AmbientTemp)
-	ok = ok && readBuffer(buffer, &update.TrackTemp)
-	ok = ok && readBuffer(buffer, &update.Clouds)
-	ok = ok && readBuffer(buffer, &update.RainLevel)
-	ok = ok && readBuffer(buffer, &update.Wettness)
-	if ok {
-		update.BestSessionLap, ok = unmarshalLap(buffer)
+func unmarshalRealTimeUpdate(buffer *bytes.Buffer) (realTimeUpdate RealTimeUpdate, ok bool) {
+	ok = readBuffer(buffer, &realTimeUpdate.EventIndex)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.SessionIndex)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.SessionType)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.Phase)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.SessionTime)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.SessionEndTime)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.FocusedCarIndex)
+	ok = ok && readString(buffer, &realTimeUpdate.ActiveCameraSet)
+	ok = ok && readString(buffer, &realTimeUpdate.ActiveCamera)
+	ok = ok && readString(buffer, &realTimeUpdate.CurrentHUDPage)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.IsReplayPlaying)
+	if realTimeUpdate.IsReplayPlaying > 0 {
+		var tmp int32
+		ok = ok && readBuffer(buffer, &tmp)
+		ok = ok && readBuffer(buffer, &tmp)
 	}
-
-	return update, ok
+	ok = ok && readBuffer(buffer, &realTimeUpdate.TimeOfDay)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.AmbientTemp)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.TrackTemp)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.Clouds)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.RainLevel)
+	ok = ok && readBuffer(buffer, &realTimeUpdate.Wettness)
+	if ok {
+		realTimeUpdate.BestSessionLap, ok = unmarshalLap(buffer)
+	}
+	return realTimeUpdate, ok
 }
 
 func UnmarshalCarUpdateResp(buffer *bytes.Buffer) (carUpdate RealTimeCarUpdate, ok bool) {

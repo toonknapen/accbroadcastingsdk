@@ -130,11 +130,6 @@ StartConnectionLoop:
 
 			case RealtimeUpdateMsgType:
 				if client.OnRealTimeUpdate != nil {
-					bufferLen := readBuffer.Len()
-					if bufferLen < 81 {
-						log.Error().Msgf("RealTimeUpdate only %d bytes (expected 81), dropping it", bufferLen)
-						continue
-					}
 					realTimeUpdate, _ := unmarshalRealTimeUpdate(readBuffer)
 					client.OnRealTimeUpdate(realTimeUpdate)
 				}
