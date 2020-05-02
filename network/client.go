@@ -49,6 +49,7 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 	client.carIdWarnedMissing = make(map[uint16]bool)
 	timeoutDuration := time.Duration(timeoutMs) * time.Millisecond
 	attempt := 0
+	var globalConnectionId int32
 
 StartConnectionLoop:
 	for true {
@@ -111,10 +112,12 @@ StartConnectionLoop:
 			case RegistrationResultMsgType:
 				log.Info().Msg("Recvd Registration")
 				connectionId, connectionSuccess, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
-				log.Info().Msgf("Connection: %d - %d - %d - %s", connectionId, connectionSuccess, isReadOnly, errMsg)
+				globalConnectionId = connectionId
+				log.Info().Msgf("Connection: id:%d\tsuccess:%d\tread-only:%d\terr:'%s'", connectionId, connectionSuccess, isReadOnly, errMsg)
 
 				errorSendReqEntryList := client.sendReqEntryList(&writeBuffer, connectionId)
 				if errorSendReqEntryList {
+					log.Error().Msg("Error while sending req for entry-list, restarting connection")
 					continue StartConnectionLoop
 				}
 
@@ -156,22 +159,26 @@ StartConnectionLoop:
 						if found {
 							client.OnRealTimeCarUpdate(realTimeCarUpdate)
 						} else {
-							//log.Info().Msgf("Car id %d unknown, fetching new entry-list", carId)
-							//client.sendReqEntryList(&writeBuffer, globalConnectionId)
-							reportedMissing := client.carIdWarnedMissing[carId]
-							if !reportedMissing {
-								log.Warn().Msgf("CarId %d is not in entry-list and will not be followed", carId)
-								client.carIdWarnedMissing[carId] = true
+							log.Info().Msgf("Car id %d unknown, fetching new entry-list for connection, %d", carId, globalConnectionId)
+							client.entryList = nil
+							error := client.sendReqEntryList(&writeBuffer, globalConnectionId)
+							if error {
+								log.Error().Msgf("Error when ")
 							}
+							//reportedMissing := client.carIdWarnedMissing[carId]
+							//if !reportedMissing {
+							//	log.Warn().Msgf("CarId %d is not in entry-list and will not be followed", carId)
+							//	client.carIdWarnedMissing[carId] = true
+							//}
 						}
 					}
 				}
 
 			case EntryListMsgType:
 				if client.OnEntryList != nil {
-					_, entryList, _ := UnmarshalEntryListRep(readBuffer)
+					connectionId, entryList, ok := UnmarshalEntryListRep(readBuffer)
+					log.Info().Msgf("EntryList (connection:%d;ok=%t): %v", connectionId, ok, entryList)
 					client.entryList = entryList
-					log.Info().Msgf("EntryList: %v", entryList)
 					client.OnEntryList(entryList)
 				}
 
@@ -184,7 +191,8 @@ StartConnectionLoop:
 
 			case TrackDataMsgType:
 				if client.OnTrackData != nil {
-					_, trackData, _ := UnmarshalTrackDataResp(readBuffer)
+					connectionId, trackData, ok := UnmarshalTrackDataResp(readBuffer)
+					log.Info().Msgf("TrackData (connection:%d;ok=%t):%+v", connectionId, ok, trackData)
 					client.OnTrackData(trackData)
 				}
 
@@ -209,9 +217,14 @@ func (client *Client) sendReqEntryList(writeBuffer *bytes.Buffer, connectionId i
 	}
 
 	client.lastEntryListRequest = now
-	MarshalEntryListReq(writeBuffer, connectionId)
+	ok := MarshalEntryListReq(writeBuffer, connectionId)
+	if !ok {
+		log.Error().Msgf("Issue wehen marshaling entrlistreq")
+		return true
+	}
+
 	n, err := client.conn.Write(writeBuffer.Bytes())
-	log.Info().Msg("Send new EntryList request")
+	log.Info().Msgf("Send new EntryList request for connection %d", connectionId)
 	if n != writeBuffer.Len() {
 		log.Error().Msgf("Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, writeBuffer.Len())
 		error = true
