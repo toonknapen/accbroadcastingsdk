@@ -262,13 +262,13 @@ type RealTimeCarUpdate struct {
 
 const (
 	BroadCastEventTypeNone            = 0
-	BroadCastEventTypeGreenFlag       = 1
-	BroadCastEventTypeSessionOver     = 2
-	BroadCastEventTypePenaltyCommMsg  = 3
-	BroadCastEventTypeAccident        = 4
-	BroadCastEventTypeLapCompleted    = 5
-	BroadCastEventTypeBestSessionLap  = 6
-	BroadCastEventTypeBestPersonalLap = 7
+	BroadCastEventTypeGreenFlag       = 1 // !!! Never send out (last checked: ACC v1.3.12)
+	BroadCastEventTypeSessionOver     = 2 // !!! Never send out (last checked: ACC v1.3.12)
+	BroadCastEventTypePenaltyCommMsg  = 3 // !!! Never send out (last checked: ACC v1.3.12)
+	BroadCastEventTypeAccident        = 4 // !!! Never send out (last checked: ACC v1.3.12)
+	BroadCastEventTypeLapCompleted    = 5 // self-explanatory
+	BroadCastEventTypeBestSessionLap  = 6 // self-explanatory
+	BroadCastEventTypeBestPersonalLap = 7 // self-explanatory
 )
 
 type BroadCastEvent struct {
