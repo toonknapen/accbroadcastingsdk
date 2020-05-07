@@ -10,43 +10,51 @@ import (
 const BroadcastingProtocolVersion byte = 4
 const ReadBufferSize = 32 * 1024
 
-// At first connection, the callbacks are initially called in following order
-//    - OnRealTimeUpdate
-//    - OnRealTimeCarUpdate (for each car)
-//    - OnEntryList
-//    - OnEntryListCar (for each car)
-//    - OnTrackData
+// After the connection is established, the OnRealTimeUpdate and OnRealTimeCarUpdate (for each car)
+// will be called at the 'msRealTimeUpdateInterval`, the sample rate that is specified when connecting.
+// Additionally OnBroadCastEvent will be called infrequently.
 //
-// As of then at every refresh following are received (including when the session changes),
-//    - OnRealTimeUpdate
-//    - OnRealTimeCarUpdate (for each car)
+// When receiving confirmation that the connection is established, a request will be send for receiving
+// the entry-list and the track-data. As a response to the request for the entry-list, OnEntryList
+// and OnEntryListCar (for each car) will be called. As a response to the request for track-data, OnTrackData
+// will be called.
 //
-// For events with a fixed entry-list, no entry-list updates are thus received anymore
+// For coherency, OnRealTimeCarUpdate will only be called after OnEntryList and the corresponding OnEntryListCar
+// have been called.
 //
-// Since this interface is currently not sending broadcasting intructions, BroadCastEvent's are not received
+// Additionally whenever a car joins (and thus an update on that car without it being in the most recent entry-list),
+// the OnRealCarUpdate is propagated. Instead a new request for the entry-list will be send and any onRealTimeCarUpdate's
+// will only be received once the new entry-list is received and all the OnEntryListCar
 type Client struct {
-	OnRealTimeUpdate    func(RealTimeUpdate)    // seems to be received first always when the connection is established
-	OnRealTimeCarUpdate func(RealTimeCarUpdate) // seems to be received righ after RealTimeUpdate after the connection is established
+	OnRealTimeUpdate    func(RealTimeUpdate)    // called at every time sample
+	OnRealTimeCarUpdate func(RealTimeCarUpdate) // called at every time sample once that car was received in the entry-list
 
-	// EntryList is only received on request from ACC
-	// The client will request the entry-list each time a RealTimeCarUpdate is received for a car that is
-	// not in the latest EntryList.
-	OnEntryList func(EntryList)
-
-	// An EntryListCar is received after having received the EntryList
-	OnEntryListCar func(EntryListCar)
-
-	OnTrackData      func(TrackData)
 	OnBroadCastEvent func(BroadCastEvent)
 
-	conn                 *net.UDPConn
-	entryList            EntryList // nil until first entry-list is received
+	// OnEntryList is only called after having received the entry-list at request.
+	// The EntryList is requested at initial connection and every time a car is detected that was not in
+	// the most recent OnEntryList
+	OnEntryList func(EntryList)
+
+	// OnEntryListCar is called for each car right after OnEntryList
+	OnEntryListCar func(EntryListCar)
+
+	// OnTrackData is only called after having received the track-data at request.
+	// The TrackData is requested once the connection is established
+	OnTrackData func(TrackData)
+
+	// The UDP connection to ACC
+	conn *net.UDPConn
+
+	// Cache of last-received entry-list.
+	// For every RealTimeCarUpdate will be verified if the carId was part of the most recent entry-list. If not,
+	// the entry-list will be set back to nil and a request for a new entry-list will be submitted.
+	entryList EntryList
+
 	lastEntryListRequest time.Time // do not ask more than once per sec
-	carIdWarnedMissing   map[uint16]bool
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) {
-	client.carIdWarnedMissing = make(map[uint16]bool)
 	timeoutDuration := time.Duration(timeoutMs) * time.Millisecond
 	attempt := 0
 	var globalConnectionId int32
@@ -165,11 +173,6 @@ StartConnectionLoop:
 							if error {
 								log.Error().Msgf("Error when ")
 							}
-							//reportedMissing := client.carIdWarnedMissing[carId]
-							//if !reportedMissing {
-							//	log.Warn().Msgf("CarId %d is not in entry-list and will not be followed", carId)
-							//	client.carIdWarnedMissing[carId] = true
-							//}
 						}
 					}
 				}
