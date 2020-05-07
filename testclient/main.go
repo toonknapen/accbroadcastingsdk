@@ -61,6 +61,7 @@ func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
 
 func main() {
 	noColor := runtime.GOOS == "windows"
+	network.Logger = network.Logger.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true, TimeFormat: zerolog.TimeFieldFormat})
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: noColor, TimeFormat: zerolog.TimeFieldFormat})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
