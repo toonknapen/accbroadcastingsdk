@@ -52,8 +52,6 @@ type Client struct {
 	// For every RealTimeCarUpdate will be verified if the carId was part of the most recent entry-list. If not,
 	// the entry-list will be set back to nil and a request for a new entry-list will be submitted.
 	entryList EntryList
-
-	lastEntryListRequest time.Time // do not ask more than once per sec
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) {
@@ -216,13 +214,8 @@ StartConnectionLoop:
 
 func (client *Client) sendReqEntryList(writeBuffer *bytes.Buffer, connectionId int32) (error bool) {
 	writeBuffer.Reset()
-	Logger.Info().Msgf("accbroadcastingsdk: ")
-	now := time.Now()
-	if now.Sub(client.lastEntryListRequest) < time.Second {
-		return
-	}
+	Logger.Info().Msgf("Requesting new entrylist (connectionId:%d)", connectionId)
 
-	client.lastEntryListRequest = now
 	ok := MarshalEntryListReq(writeBuffer, connectionId)
 	if !ok {
 		Logger.Error().Msgf("Issue wehen marshaling entrlistreq")
