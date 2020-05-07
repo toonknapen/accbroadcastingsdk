@@ -252,7 +252,11 @@ type RealTimeCarUpdate struct {
 	Laps           uint16  // number of laps completed. Thus zero during first lap of the race. Note: also 0 before the start of the race
 	Delta          int32   // delta in respect to its fastest lap in ms
 	BestSessionLap Lap
-	LastLap        Lap
+
+	// LastLap.LapTimeMs always provide the real lap-time of the last lap, also in case it is invalid
+	// LastLap.IsInvalid will signal if the lap is valid or not
+	// LastLap.Splits[x] can be 0 in case the sector was invalid (never equal to InvalidSectorTime)
+	LastLap Lap
 
 	// The LapTimeMs is continuously updated during the lap.
 	// The splits of the CurrentLap are however never filled in.

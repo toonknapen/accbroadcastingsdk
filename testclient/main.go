@@ -16,7 +16,7 @@ func OnRealTimeUpdate(realTimeUpdate network.RealTimeUpdate) {
 		log.Error().Msgf("Error while marshaling realtimeupdate: %v", err)
 		return
 	}
-	log.Debug().Msgf("RealTimeUpdate: %s", raw)
+	log.Info().Msgf("RealTimeUpdate: %s", raw)
 }
 
 func OnRealTimeCarUpdate(realTimeCarUpdate network.RealTimeCarUpdate) {
