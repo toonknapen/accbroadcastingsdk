@@ -277,7 +277,7 @@ const (
 type BroadCastEvent struct {
 	Type   byte   // BroadCastEventType<something>
 	Msg    string // message (laptime often)
-	TimeMs int32  // !SessionTime is a float however (int32 is better than float though)
+	TimeMs int32  // Beware, is not since the session started, seems to be since the connection to the broadcasting-interface was established
 	CarId  int32  // !elsewhere this is uint16
 }
 
