@@ -67,7 +67,7 @@ StartConnectionLoop:
 		}
 		attempt++
 
-		Logger.Info().Msgf("Connecting to: %s", address)
+		Logger.Info().Msgf("Connecting to broadcasting interface at %s", address)
 
 		raddr, err := net.ResolveUDPAddr("udp", address)
 		if err != nil {
@@ -100,7 +100,7 @@ StartConnectionLoop:
 			client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 			n, err = client.conn.Read(readArray[:])
 			if err != nil {
-				Logger.Error().Msgf("Error when reading message: '%v' -> restarting connection", err)
+				Logger.Error().Msgf("Error when reading message: '%v' -> retrying connection", err)
 				continue StartConnectionLoop
 			}
 			if n == ReadBufferSize {
