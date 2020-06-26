@@ -88,6 +88,7 @@ const (
 	TrackNameZandvoort   = "Circuit Zandvoort"
 	TrackNameBathurst    = "Mount Panorama Circuit"
 	TrackNameLagunaSeca  = "WeatherTech Raceway Laguna Seca"
+	TrackNameSuzuka      = "Suzuka Circuit"
 )
 
 const (
@@ -104,6 +105,7 @@ const (
 	TrackIdZandvoort   = 11
 	TrackIdBathurst    = 13
 	TrackIdLagunaSeca  = 14
+	TrackIdSuzuka      = 15
 )
 
 const (
