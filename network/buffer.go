@@ -87,6 +87,7 @@ const (
 	TrackNameZolder      = "Circuit Zolder"
 	TrackNameZandvoort   = "Circuit Zandvoort"
 	TrackNameBathurst    = "Mount Panorama Circuit"
+	TrackNameLagunaSeca  = "WeatherTech Raceway Laguna Seca"
 )
 
 const (
@@ -102,6 +103,7 @@ const (
 	TrackIdZolder      = 10
 	TrackIdZandvoort   = 11
 	TrackIdBathurst    = 13
+	TrackIdLagunaSeca  = 14
 )
 
 const (
