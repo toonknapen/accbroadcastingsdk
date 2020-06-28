@@ -52,6 +52,8 @@ type Client struct {
 	// For every RealTimeCarUpdate will be verified if the carId was part of the most recent entry-list. If not,
 	// the entry-list will be set back to nil and a request for a new entry-list will be submitted.
 	entryList EntryList
+
+	isRace bool
 }
 
 func (client *Client) ConnectAndRun(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) {
@@ -144,6 +146,7 @@ StartConnectionLoop:
 			case RealtimeUpdateMsgType:
 				if client.OnRealTimeUpdate != nil {
 					realTimeUpdate, _ := unmarshalRealTimeUpdate(readBuffer)
+					client.isRace = realTimeUpdate.SessionType == SessionTypeRace
 					client.OnRealTimeUpdate(realTimeUpdate)
 				}
 
@@ -167,11 +170,15 @@ StartConnectionLoop:
 						if found {
 							client.OnRealTimeCarUpdate(realTimeCarUpdate)
 						} else {
-							Logger.Info().Msgf("Car id %d unknown, fetching new entry-list for connection, %d", carId, globalConnectionId)
-							client.entryList = nil
-							error := client.sendReqEntryList(&writeBuffer, globalConnectionId)
-							if error {
-								Logger.Error().Msgf("Error when ")
+							if client.isRace {
+								Logger.Error().Msgf("Car id %d unknown, ignoring during race")
+							} else {
+								Logger.Info().Msgf("Car id %d unknown, fetching new entry-list for connection, %d", carId, globalConnectionId)
+								client.entryList = nil
+								error := client.sendReqEntryList(&writeBuffer, globalConnectionId)
+								if error {
+									Logger.Error().Msgf("Error when ")
+								}
 							}
 						}
 					}
