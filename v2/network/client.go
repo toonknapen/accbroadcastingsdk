@@ -3,7 +3,11 @@ package network
 import (
 	"bytes"
 	"github.com/rs/zerolog/log"
+	"github.com/toonknapen/accbroadcastingsdk/network"
 	"net"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -215,4 +219,15 @@ func (client *Client) Disconnect() {
 	if err != nil {
 		log.Warn().Msgf("ACCBroadCastAPI: Error while disconnecting: %v", err)
 	}
+}
+
+func SetupCloseHandler(client *Client) {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		log.Info().Msg("ACCBroadCastAPI: Ctrl-C pressed in Terminal, disconnecting from ACC")
+		client.Disconnect()
+		os.Exit(0)
+	}()
 }

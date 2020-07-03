@@ -230,8 +230,8 @@ type RealTimeUpdate struct {
 	ActiveCameraSet string
 	ActiveCamera    string
 	CurrentHUDPage  string
-	IsReplayPlaying byte // yes is != 0x00
-	TimeOfDay       float32
+	IsReplayPlaying byte    // yes is != 0x00
+	TimeOfDay       float32 // seconds since midnight (not coherent with SessionTime which is a float but expressing milliseconds instead of seconds), subject to race-time-multiplier
 	AmbientTemp     int8
 	TrackTemp       int8
 	Clouds          byte

@@ -6,8 +6,6 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/toonknapen/accbroadcastingsdk/v2/network"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
@@ -60,18 +58,7 @@ func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
 	log.Debug().Msgf("BroadCastEvent: %v", broadCastEvent)
 }
 
-func SetupCloseHandler(client *network.Client) {
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-c
-		log.Info().Msg("\r- Ctrl+C pressed in Terminal")
-		client.Disconnect()
-		os.Exit(0)
-	}()
-}
 func main() {
-	network.Logger = network.Logger.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true, TimeFormat: zerolog.TimeFieldFormat})
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true, TimeFormat: zerolog.TimeFieldFormat})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
@@ -84,7 +71,7 @@ func main() {
 		OnBroadCastEvent:    OnBroadCastEvent,
 	}
 
-	SetupCloseHandler(&accClient)
+	network.SetupCloseHandler(&accClient)
 	go accClient.ConnectAndRun("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
 
 	time.Sleep(24 * time.Hour)
