@@ -166,9 +166,9 @@ StartConnectionLoop:
 	}
 }
 
-func (client *Client) RequestTrackData(connectionId int32) (ok bool) {
+func (client *Client) RequestTrackData() (ok bool) {
 	client.writeBuffer.Reset()
-	MarshalTrackDataReq(&client.writeBuffer, connectionId)
+	MarshalTrackDataReq(&client.writeBuffer, client.connectionId)
 	n, err := client.conn.Write(client.writeBuffer.Bytes())
 	if n != client.writeBuffer.Len() {
 		Logger.Error().Msgf("Error while writing trackdata-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
@@ -181,18 +181,18 @@ func (client *Client) RequestTrackData(connectionId int32) (ok bool) {
 	return true
 }
 
-func (client *Client) RequestEntryList(connectionId int32) (ok bool) {
+func (client *Client) RequestEntryList() (ok bool) {
 	client.writeBuffer.Reset()
-	Logger.Info().Msgf("Requesting new entrylist (connectionId:%d)", connectionId)
+	Logger.Info().Msgf("Requesting new entrylist (connectionId:%d)", client.connectionId)
 
-	MarshalEntryListReq(&client.writeBuffer, connectionId)
+	MarshalEntryListReq(&client.writeBuffer, client.connectionId)
 	if !ok {
 		Logger.Error().Msgf("Issue wehen marshaling entrlistreq")
 		return false
 	}
 
 	n, err := client.conn.Write(client.writeBuffer.Bytes())
-	Logger.Info().Msgf("Send new EntryList request for connection %d", connectionId)
+	Logger.Info().Msgf("Send new EntryList request for connection %d", client.connectionId)
 	if n != client.writeBuffer.Len() {
 		Logger.Error().Msgf("Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
 		return false
