@@ -3,7 +3,6 @@ package network
 import (
 	"bytes"
 	"github.com/rs/zerolog/log"
-	"github.com/toonknapen/accbroadcastingsdk/network"
 	"net"
 	"os"
 	"os/signal"
