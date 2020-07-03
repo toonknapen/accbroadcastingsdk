@@ -143,7 +143,7 @@ StartConnectionLoop:
 			case TrackDataMsgType:
 				if client.OnTrackData != nil {
 					connectionId, trackData, ok := UnmarshalTrackDataResp(readBuffer)
-					log.Info().Msgf("ACCBroadCastAPI: TrackData (connection:%d;ok=%t):%+v", connectionId, ok, trackData)
+					log.Debug().Msgf("ACCBroadCastAPI: TrackData (connection:%d;ok=%t):%+v", connectionId, ok, trackData)
 					client.OnTrackData(trackData)
 				}
 
@@ -161,6 +161,7 @@ StartConnectionLoop:
 }
 
 func (client *Client) RequestTrackData() (ok bool) {
+	log.Debug().Msgf("ACCBroadCastAPI: Requesting track data (connectionId:%d)", client.connectionId)
 	client.writeBuffer.Reset()
 	MarshalTrackDataReq(&client.writeBuffer, client.connectionId)
 	n, err := client.conn.Write(client.writeBuffer.Bytes())
@@ -176,15 +177,9 @@ func (client *Client) RequestTrackData() (ok bool) {
 }
 
 func (client *Client) RequestEntryList() (ok bool) {
-	client.writeBuffer.Reset()
 	log.Debug().Msgf("ACCBroadCastAPI: Requesting new entrylist (connectionId:%d)", client.connectionId)
-
+	client.writeBuffer.Reset()
 	MarshalEntryListReq(&client.writeBuffer, client.connectionId)
-	if !ok {
-		log.Error().Msgf("ACCBroadCastAPI: Issue wehen marshaling entrlistreq")
-		return false
-	}
-
 	n, err := client.conn.Write(client.writeBuffer.Bytes())
 	log.Debug().Msgf("ACCBroadCastAPI: Send new EntryList request for connection %d", client.connectionId)
 	if n != client.writeBuffer.Len() {

@@ -202,7 +202,7 @@ StartConnectionLoop:
 			case TrackDataMsgType:
 				if client.OnTrackData != nil {
 					connectionId, trackData, ok := UnmarshalTrackDataResp(readBuffer)
-					Logger.Info().Msgf("TrackData (connection:%d;ok=%t):%+v", connectionId, ok, trackData)
+					Logger.Debug().Msgf("TrackData (connection:%d;ok=%t):%+v", connectionId, ok, trackData)
 					client.OnTrackData(trackData)
 				}
 
@@ -225,7 +225,7 @@ func (client *Client) sendReqEntryList(writeBuffer *bytes.Buffer, connectionId i
 
 	ok := MarshalEntryListReq(writeBuffer, connectionId)
 	if !ok {
-		Logger.Error().Msgf("Issue wehen marshaling entrlistreq")
+		Logger.Error().Msgf("Issue when marshaling entrlistreq")
 		return true
 	}
 
