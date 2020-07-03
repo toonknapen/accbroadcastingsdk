@@ -10,8 +10,6 @@ import (
 const BroadcastingProtocolVersion byte = 4
 const ReadBufferSize = 32 * 1024
 
-var Logger = log.With().Str("component", "accbroadcastingsdk").Logger()
-
 // After the connection is established, the OnRealTimeUpdate and OnRealTimeCarUpdate (for each car)
 // will be called at the 'msRealTimeUpdateInterval`, the sample rate that is specified when connecting.
 // Additionally OnBroadCastEvent will be called infrequently.
@@ -45,10 +43,6 @@ type Client struct {
 	// The TrackData is requested once the connection is established
 	OnTrackData func(TrackData)
 
-	Championship string // to be transferred in session to router
-	Event        string // to be transferred in session to router
-	VideoFeed    string // to be transferred in session to router
-
 	conn         *net.UDPConn // The UDP connection to ACC
 	writeBuffer  bytes.Buffer // reusable buffer
 	connectionId int32
@@ -61,33 +55,33 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 StartConnectionLoop:
 	for true {
 		if attempt > 0 {
-			Logger.Info().Msg("Sleeping before retrying ...")
+			log.Info().Msg("ACCBroadCastAPI: Sleeping before retrying ...")
 			time.Sleep(5 * time.Second)
 		}
 		attempt++
 
-		Logger.Info().Msgf("Connecting to broadcasting interface at %s", address)
+		log.Info().Msgf("ACCBroadCastAPI: Connecting to %s", address)
 
 		raddr, err := net.ResolveUDPAddr("udp", address)
 		if err != nil {
-			Logger.Error().Msgf("resolving address:%v", err)
+			log.Error().Msgf("ACCBroadCastAPI: error resolving address:%v", err)
 			continue StartConnectionLoop
 		}
 
 		client.conn, err = net.DialUDP("udp", nil, raddr)
 		if err != nil {
-			Logger.Error().Msgf("Error when establishing UDP connection: %v -> retrying", err)
+			log.Error().Msgf("ACCBroadCastAPI: Retrying connection due to error when establishing UDP connection: %v", err)
 		}
 
 		MarshalConnectinReq(&client.writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
 		client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 		n, err := client.conn.Write(client.writeBuffer.Bytes())
 		if n < client.writeBuffer.Len() {
-			Logger.Error().Msgf("Restarting connection because of connection request to broadcasting interface of ACC being partially written only")
+			log.Error().Msgf("ACCBroadCastAPI: Restarting connection because of connection request to broadcasting interface of ACC being partially written only")
 			continue StartConnectionLoop
 		}
 		if err != nil {
-			Logger.Error().Msgf("Restarting connection because of error while sending connection request to broadcasting interface of ACC: %v", err)
+			log.Error().Msgf("ACCBroadCastAPI: Restarting connection because of error while sending connection request to broadcasting interface of ACC: %v", err)
 			continue StartConnectionLoop
 		}
 
@@ -97,28 +91,28 @@ StartConnectionLoop:
 			client.conn.SetDeadline(time.Now().Add(timeoutDuration))
 			n, err = client.conn.Read(readArray[:])
 			if err != nil {
-				Logger.Error().Msgf("Retrying connection to broadcasting interface of ACC because of no response received after %dms.: '%v'", timeoutMs, err)
+				log.Error().Msgf("ACCBroadCastAPI: Retrying connection to broadcasting interface of ACC because of no response received after %dms.: '%v'", timeoutMs, err)
 				continue StartConnectionLoop
 			}
 			if n == ReadBufferSize {
-				Logger.Panic().Msg("Buffer not big enough !!!")
+				log.Panic().Msg("ACCBroadCastAPI: Buffer not big enough !!!")
 			}
 
 			// extract msgType from first byte
 			readBuffer := bytes.NewBuffer(readArray[:n])
 			msgType, err := readBuffer.ReadByte()
 			if err != nil {
-				Logger.Error().Msgf("Restarting connection because of error reading the message-type: %v", err)
+				log.Error().Msgf("ACCBroadCastAPI: Restarting connection because of error reading the message-type: %v", err)
 				continue StartConnectionLoop
 			}
 
 			// handle msg
 			switch msgType {
 			case RegistrationResultMsgType:
-				Logger.Info().Msg("Recvd Registration")
+				log.Info().Msg("ACCBroadCastAPI: Recvd Registration")
 				connectionId, connectionSuccess, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
 				client.connectionId = connectionId
-				Logger.Info().Msgf("Connection: id:%d\tsuccess:%d\tread-only:%d\terr:'%s'", connectionId, connectionSuccess, isReadOnly, errMsg)
+				log.Info().Msgf("ACCBroadCastAPI: Connection: id:%d, success:%d, read-only:%d, err:'%s'", connectionId, connectionSuccess, isReadOnly, errMsg)
 
 			case RealtimeUpdateMsgType:
 				if client.OnRealTimeUpdate != nil {
@@ -135,21 +129,21 @@ StartConnectionLoop:
 			case EntryListMsgType:
 				if client.OnEntryList != nil {
 					connectionId, entryList, ok := UnmarshalEntryListRep(readBuffer)
-					Logger.Info().Msgf("EntryList (connection:%d;ok=%t): %v", connectionId, ok, entryList)
+					log.Debug().Msgf("ACCBroadCastAPI: EntryList (connection:%d;ok=%t): %v", connectionId, ok, entryList)
 					client.OnEntryList(entryList)
 				}
 
 			case EntryListCarMsgType:
 				if client.OnEntryListCar != nil {
 					entryListCar, _ := UnmarshalEntryListCarResp(readBuffer)
-					Logger.Info().Msgf("EntryListCar: %+v", entryListCar)
+					log.Debug().Msgf("ACCBroadCastAPI: EntryListCar: %+v", entryListCar)
 					client.OnEntryListCar(entryListCar)
 				}
 
 			case TrackDataMsgType:
 				if client.OnTrackData != nil {
 					connectionId, trackData, ok := UnmarshalTrackDataResp(readBuffer)
-					Logger.Info().Msgf("TrackData (connection:%d;ok=%t):%+v", connectionId, ok, trackData)
+					log.Info().Msgf("ACCBroadCastAPI: TrackData (connection:%d;ok=%t):%+v", connectionId, ok, trackData)
 					client.OnTrackData(trackData)
 				}
 
@@ -160,7 +154,7 @@ StartConnectionLoop:
 				}
 
 			default:
-				Logger.Warn().Msg("WARNING:unrecognised msg-type")
+				log.Warn().Msg("ACCBroadCastAPI: unrecognised msg-type")
 			}
 		}
 	}
@@ -171,11 +165,11 @@ func (client *Client) RequestTrackData() (ok bool) {
 	MarshalTrackDataReq(&client.writeBuffer, client.connectionId)
 	n, err := client.conn.Write(client.writeBuffer.Bytes())
 	if n != client.writeBuffer.Len() {
-		Logger.Error().Msgf("Error while writing trackdata-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
+		log.Error().Msgf("ACCBroadCastAPI: Error while writing trackdata-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
 		return false
 	}
 	if err != nil {
-		Logger.Error().Msgf("Error while writing trackdata-req, %v", err)
+		log.Error().Msgf("ACCBroadCastAPI: Error while writing trackdata-req, %v", err)
 		return false
 	}
 	return true
@@ -183,22 +177,22 @@ func (client *Client) RequestTrackData() (ok bool) {
 
 func (client *Client) RequestEntryList() (ok bool) {
 	client.writeBuffer.Reset()
-	Logger.Info().Msgf("Requesting new entrylist (connectionId:%d)", client.connectionId)
+	log.Debug().Msgf("ACCBroadCastAPI: Requesting new entrylist (connectionId:%d)", client.connectionId)
 
 	MarshalEntryListReq(&client.writeBuffer, client.connectionId)
 	if !ok {
-		Logger.Error().Msgf("Issue wehen marshaling entrlistreq")
+		log.Error().Msgf("ACCBroadCastAPI: Issue wehen marshaling entrlistreq")
 		return false
 	}
 
 	n, err := client.conn.Write(client.writeBuffer.Bytes())
-	Logger.Info().Msgf("Send new EntryList request for connection %d", client.connectionId)
+	log.Debug().Msgf("ACCBroadCastAPI: Send new EntryList request for connection %d", client.connectionId)
 	if n != client.writeBuffer.Len() {
-		Logger.Error().Msgf("Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
+		log.Error().Msgf("ACCBroadCastAPI:Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
 		return false
 	}
 	if err != nil {
-		Logger.Error().Msgf("Error while writing entrylist-req, %v", err)
+		log.Error().Msgf("ACCBroadCastAPI: Error while writing entrylist-req, %v", err)
 		return false
 	}
 	return true
@@ -208,22 +202,22 @@ func (client *Client) Disconnect() {
 	client.writeBuffer.Reset()
 	ok := MarshalDisconnectReq(&client.writeBuffer, client.connectionId)
 	if !ok {
-		Logger.Error().Msgf("Error when marhalling disconnecting %d", client.connectionId)
+		log.Error().Msgf("ACCBroadCastAPI: Error when marhalling disconnecting %d", client.connectionId)
 	}
 	n, err := client.conn.Write(client.writeBuffer.Bytes())
 	if n != client.writeBuffer.Len() {
-		Logger.Error().Msgf("Error while writing disconnect, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
+		log.Error().Msgf("ACCBroadCastAPI: Error while writing disconnect, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
 		return
 	}
 	if err != nil {
-		Logger.Error().Msgf("Error while writing disconnect, %v", err)
+		log.Error().Msgf("ACCBroadCastAPI: Error while writing disconnect, %v", err)
 		return
 	}
-	Logger.Info().Msgf("Disconnected %d", client.connectionId)
+	log.Info().Msgf("ACCBroadCastAPI: Disconnected %d", client.connectionId)
 	client.connectionId = -1
 
 	err = client.conn.Close()
 	if err != nil {
-		Logger.Warn().Msgf("WARNING:accbroadcastingsdk.Client: Error while disconnecting: %v", err)
+		log.Warn().Msgf("ACCBroadCastAPI: Error while disconnecting: %v", err)
 	}
 }
