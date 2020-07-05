@@ -58,7 +58,7 @@ func (client *Client) ConnectAndRun(address string, displayName string, connecti
 StartConnectionLoop:
 	for true {
 		if attempt > 0 {
-			log.Info().Msg("ACCBroadCastAPI: Sleeping before retrying ...")
+			log.Info().Msg("ACCBroadCastAPI: Retrying connection to ACC in 5 seconds ...")
 			time.Sleep(5 * time.Second)
 		}
 		attempt++
