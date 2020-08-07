@@ -46,8 +46,11 @@ type Client struct {
 	// The TrackData is requested once the connection is established
 	OnTrackData func(TrackData)
 
-	conn         *net.UDPConn // The UDP connection to ACC
-	writeBuffer  bytes.Buffer // reusable buffer
+	// conn is the UDP connection to ACC
+	conn *net.UDPConn
+
+	// connectionId is received when being registered on the UDP interface.
+	// At every subsequent request, the connectionId needs to be send along
 	connectionId int32
 }
 
@@ -76,10 +79,11 @@ StartConnectionLoop:
 			log.Error().Msgf("ACCBroadCastAPI: Retrying connection due to error when establishing UDP connection: %v", err)
 		}
 
-		MarshalConnectinReq(&client.writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
+		var writeBuffer bytes.Buffer
+		MarshalConnectinReq(&writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
 		client.conn.SetDeadline(time.Now().Add(timeoutDuration))
-		n, err := client.conn.Write(client.writeBuffer.Bytes())
-		if n < client.writeBuffer.Len() {
+		n, err := client.conn.Write(writeBuffer.Bytes())
+		if n < writeBuffer.Len() {
 			log.Error().Msgf("ACCBroadCastAPI: Restarting connection because of connection request to broadcasting interface of ACC being partially written only")
 			continue StartConnectionLoop
 		}
@@ -165,11 +169,11 @@ StartConnectionLoop:
 
 func (client *Client) RequestTrackData() (ok bool) {
 	log.Debug().Msgf("ACCBroadCastAPI: Requesting track data (connectionId:%d)", client.connectionId)
-	client.writeBuffer.Reset()
-	MarshalTrackDataReq(&client.writeBuffer, client.connectionId)
-	n, err := client.conn.Write(client.writeBuffer.Bytes())
-	if n != client.writeBuffer.Len() {
-		log.Error().Msgf("ACCBroadCastAPI: Error while writing trackdata-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
+	var writeBuffer bytes.Buffer
+	MarshalTrackDataReq(&writeBuffer, client.connectionId)
+	n, err := client.conn.Write(writeBuffer.Bytes())
+	if n != writeBuffer.Len() {
+		log.Error().Msgf("ACCBroadCastAPI: Error while writing trackdata-req, wrote only %d bytes while it should have been %d", n, writeBuffer.Len())
 		return false
 	}
 	if err != nil {
@@ -181,12 +185,12 @@ func (client *Client) RequestTrackData() (ok bool) {
 
 func (client *Client) RequestEntryList() (ok bool) {
 	log.Debug().Msgf("ACCBroadCastAPI: Requesting new entrylist (connectionId:%d)", client.connectionId)
-	client.writeBuffer.Reset()
-	MarshalEntryListReq(&client.writeBuffer, client.connectionId)
-	n, err := client.conn.Write(client.writeBuffer.Bytes())
+	var writeBuffer bytes.Buffer
+	MarshalEntryListReq(&writeBuffer, client.connectionId)
+	n, err := client.conn.Write(writeBuffer.Bytes())
 	log.Debug().Msgf("ACCBroadCastAPI: Send new EntryList request for connection %d", client.connectionId)
-	if n != client.writeBuffer.Len() {
-		log.Error().Msgf("ACCBroadCastAPI:Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
+	if n != writeBuffer.Len() {
+		log.Error().Msgf("ACCBroadCastAPI:Error while writing entrylist-req, wrote only %d bytes while it should have been %d", n, writeBuffer.Len())
 		return false
 	}
 	if err != nil {
@@ -197,14 +201,14 @@ func (client *Client) RequestEntryList() (ok bool) {
 }
 
 func (client *Client) Disconnect() {
-	client.writeBuffer.Reset()
-	ok := MarshalDisconnectReq(&client.writeBuffer, client.connectionId)
+	var writeBuffer bytes.Buffer
+	ok := MarshalDisconnectReq(&writeBuffer, client.connectionId)
 	if !ok {
 		log.Error().Msgf("ACCBroadCastAPI: Error when marhalling disconnecting %d", client.connectionId)
 	}
-	n, err := client.conn.Write(client.writeBuffer.Bytes())
-	if n != client.writeBuffer.Len() {
-		log.Error().Msgf("ACCBroadCastAPI: Error while writing disconnect, wrote only %d bytes while it should have been %d", n, client.writeBuffer.Len())
+	n, err := client.conn.Write(writeBuffer.Bytes())
+	if n != writeBuffer.Len() {
+		log.Error().Msgf("ACCBroadCastAPI: Error while writing disconnect, wrote only %d bytes while it should have been %d", n, writeBuffer.Len())
 		return
 	}
 	if err != nil {
