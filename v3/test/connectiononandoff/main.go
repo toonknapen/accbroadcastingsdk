@@ -43,9 +43,9 @@ func main() {
 
 	// network.SetupCloseHandler(&accClient)
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 30; i++ {
 		log.Info().Msgf("main loop going to connect")
-		go accClient.ConnectAndListen("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
+		go accClient.ConnectAndListen("127.0.0.1:9000", "pitwall", "asd", 250, "", 5000)
 
 		connectionId := <-connectedStream
 		log.Info().Msgf("main loop Connected: %d", connectionId)
@@ -64,7 +64,7 @@ func main() {
 			<-sessionTimeStream
 		}
 
-		waitSeconds := 5
+		waitSeconds := 1
 		log.Info().Msgf("waiting for %d seconds", waitSeconds)
 		time.Sleep(time.Duration(waitSeconds) * time.Second)
 	}
