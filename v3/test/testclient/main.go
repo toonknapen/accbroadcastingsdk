@@ -88,7 +88,7 @@ func main() {
 	// network.SetupCloseHandler(&accClient)
 
 	for i := 0; i < 10; i++ {
-		go accClient.ConnectAndListen("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
+		go accClient.ConnectListenAndCallback("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
 		<-connected
 		log.Info().Msg("Receiving messages")
 		time.Sleep(10 * time.Second)

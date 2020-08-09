@@ -53,7 +53,7 @@ type Client struct {
 	OnTrackData func(TrackData)
 
 	// conn is the UDP connection to ACC
-	// Set and unset in ConnectAndListen
+	// Set and unset in ConnectListenAndCallback
 	conn *net.UDPConn
 
 	timeOutDuration time.Duration
@@ -62,11 +62,11 @@ type Client struct {
 	// At every subsequent request, the connectionId needs to be send along
 	connectionId int32
 
-	// stopListening can be set to true to stop the 'ConnectAndListen'
+	// stopListening can be set to true to stop the 'ConnectListenAndCallback'
 	stopListening bool
 }
 
-func (client *Client) ConnectAndListen(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) (success bool, errMsg string) {
+func (client *Client) ConnectListenAndCallback(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) (success bool, errMsg string) {
 	client.timeOutDuration = time.Duration(timeoutMs) * time.Millisecond
 
 	success, errMsg = client.connect(address, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)

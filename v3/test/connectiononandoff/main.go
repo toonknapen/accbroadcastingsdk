@@ -45,7 +45,7 @@ func main() {
 
 	for i := 0; i < 30; i++ {
 		log.Info().Msgf("main loop going to connect")
-		go accClient.ConnectAndListen("127.0.0.1:9000", "pitwall", "asd", 250, "", 5000)
+		go accClient.ConnectListenAndCallback("127.0.0.1:9000", "pitwall", "asd", 250, "", 5000)
 
 		connectionId := <-connectedStream
 		log.Info().Msgf("main loop Connected: %d", connectionId)
