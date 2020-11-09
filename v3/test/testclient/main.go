@@ -5,7 +5,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/toonknapen/accbroadcastingsdk/v3/network"
-	"os"
 	"time"
 )
 
@@ -69,7 +68,6 @@ func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
 }
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr, NoColor: true, TimeFormat: zerolog.TimeFieldFormat})
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 
 	connected = make(chan bool)
@@ -85,18 +83,12 @@ func main() {
 		OnBroadCastEvent:    OnBroadCastEvent,
 	}
 
-	// network.SetupCloseHandler(&accClient)
-
 	for i := 0; i < 10; i++ {
 		go accClient.ConnectListenAndCallback("127.0.0.1:9000", "pitwall", "asd", 1000, "", 5000)
-		<-connected
+		<-connected // wait until OnConnected flags in the 'connected' channel that the connection is established.
 		log.Info().Msg("Receiving messages")
 		time.Sleep(10 * time.Second)
 		log.Info().Msg("Disconnecting")
 		accClient.RequestDisconnect()
 	}
-}
-
-func listen() {
-
 }
