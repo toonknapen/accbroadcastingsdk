@@ -75,7 +75,8 @@ type Client struct {
 // the connection will be considered broken and this function will return.
 //
 // To stop listening to the UDP interface, `RequestDisconnect()` can be called. This function will attempt to
-// disconnect from the UDP interface (as to be able to reconnect again) before returning.
+// disconnect from the UDP interface (as to be able to reconnect again) before returning. Note that it might
+// take 'timeoutMs' before the disconnect will be send to ACC after the execution of RequestDisconnect.
 func (client *Client) ConnectListenAndCallback(address string, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string, timeoutMs int32) (success bool, errMsg string) {
 	client.timeOutDuration = time.Duration(timeoutMs) * time.Millisecond
 
