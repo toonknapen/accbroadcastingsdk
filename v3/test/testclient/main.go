@@ -69,10 +69,12 @@ func OnBroadCastEvent(broadCastEvent network.BroadCastEvent) {
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
+	subLogger := log.With().Str("component", "ACCBroacastingSDK").Logger()
 
 	connected = make(chan bool)
 
 	accClient := network.Client{
+		Logger:              subLogger,
 		OnConnected:         OnConnected,
 		OnDisconnected:      OnDisconnected,
 		OnRealTimeUpdate:    OnRealTimeUpdate,
