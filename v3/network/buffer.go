@@ -305,7 +305,7 @@ type Driver struct {
 	Nationality uint16
 }
 
-func MarshalConnectinReq(buffer *bytes.Buffer, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) (ok bool) {
+func MarshalRegistrationReq(buffer *bytes.Buffer, displayName string, connectionPassword string, msRealtimeUpdateInterval int32, commandPassword string) (ok bool) {
 	ok = writeByteBuffer(buffer, RegisterCommandApplication)
 	ok = ok && writeByteBuffer(buffer, BroadcastingProtocolVersion)
 	ok = ok && writeString(buffer, displayName)

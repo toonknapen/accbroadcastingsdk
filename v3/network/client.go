@@ -81,6 +81,7 @@ func (client *Client) ConnectListenAndCallback(address string, displayName strin
 	client.timeOutDuration = time.Duration(timeoutMs) * time.Millisecond
 
 	success, errMsg = client.connect(address, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
+
 	if success {
 		success, errMsg = client.listen()
 	}
@@ -153,20 +154,21 @@ func (client *Client) connect(address string, displayName string, connectionPass
 	}
 
 	var writeBuffer bytes.Buffer
-	MarshalConnectinReq(&writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
+	MarshalRegistrationReq(&writeBuffer, displayName, connectionPassword, msRealtimeUpdateInterval, commandPassword)
 	client.conn.SetDeadline(time.Now().Add(client.timeOutDuration))
 	n, err := client.conn.Write(writeBuffer.Bytes())
 	if n < writeBuffer.Len() {
-		errMsg = fmt.Sprintf("connection request partially written only")
+		errMsg = fmt.Sprintf("registration request partially written only")
 		client.Logger.Error().Msg(errMsg)
 		return false, errMsg
 	}
 	if err != nil {
-		errMsg = fmt.Sprintf("error while writing connection request to ACC: %v", err)
+		errMsg = fmt.Sprintf("error while writing registration request to ACC: %v", err)
 		client.Logger.Error().Msg(errMsg)
 		return false, errMsg
 	}
 
+	client.Logger.Info().Int(Code, InfoRegistrationReqSendToAcc).Msgf("Registration request send to ACC")
 	return true, ""
 }
 
@@ -204,7 +206,7 @@ func (client *Client) listen() (success bool, errMsg string) {
 			client.Logger.Info().Msg("Recvd Registration")
 			connectionId, connectionSuccess, isReadOnly, errMsg, _ := UnmarshalConnectionResp(readBuffer)
 			client.connectionId = connectionId
-			client.Logger.Info().Msgf("Connection: id:%d, success:%d, read-only:%d, err:'%s'", connectionId, connectionSuccess, isReadOnly, errMsg)
+			client.Logger.Info().Int(Code, InfoRegistrationAckByAcc).Msgf("Connection: id:%d, success:%d, read-only:%d, err:'%s'", connectionId, connectionSuccess, isReadOnly, errMsg)
 			if client.OnConnected != nil {
 				client.OnConnected(client.connectionId)
 			}
