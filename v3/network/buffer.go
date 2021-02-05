@@ -66,13 +66,22 @@ const (
 )
 
 const (
-	CarModelMercedes    = 1
-	CarModelFerrari     = 2
-	CarModelLexus       = 15
-	CarModelLamborghini = 16
-	CarModelAudi        = 19
-	CarModelAstonMartin = 20
-	CarModelPorsche     = 23
+	CarModelMercedes       = 1
+	CarModelFerrari        = 2
+	CarModelLexus          = 15
+	CarModelLamborghini    = 16
+	CarModelAudi           = 19
+	CarModelAstonMartin    = 20
+	CarModelPorsche        = 23
+	CarModelAlpineGT4      = 50
+	CarModelAstonMartinGT4 = 51
+	CarModelBMWGT4         = 53
+	CarModelChevroletGT4   = 55
+	CarModelKTMGT4         = 57
+	CarModelMaseratiGT4    = 58
+	CarModelMcLarenGT4     = 59
+	CarModelMercedesGT4    = 60
+	CarModelPorscheGT4     = 61
 )
 
 const (
